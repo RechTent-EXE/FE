@@ -7,8 +7,6 @@ import {
   Laptop,
   Smartphone,
   Sparkles,
-  Zap,
-  Star,
   TrendingUp,
 } from "lucide-react";
 
@@ -38,13 +36,6 @@ export default function HeroSection() {
       <div className="container mx-auto px-4 py-20 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 animate-fade-in">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-blue-200 rounded-full px-4 py-2 text-sm font-medium text-blue-700 shadow-lg">
-              <Zap className="w-4 h-4" />
-              <span>🎉 Giảm giá 30% cho khách hàng mới</span>
-              <Star className="w-4 h-4 text-yellow-500" />
-            </div>
-
             {/* Main Heading */}
             <div className="space-y-6">
               <h1 className="text-6xl lg:text-7xl font-bold leading-tight">
@@ -128,7 +119,7 @@ export default function HeroSection() {
                     <Camera className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-white font-bold text-xl mb-2">Camera</h3>
-                  <p className="text-white/90 text-sm">Chuyên nghiệp 📸</p>
+                  <p className="text-white/90 text-sm">Chuyên nghiệp</p>
                   <div className="mt-4 text-white/80 text-xs">50+ sản phẩm</div>
                 </div>
 
@@ -137,7 +128,7 @@ export default function HeroSection() {
                     <Video className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-white font-bold text-xl mb-2">Flycam</h3>
-                  <p className="text-white/90 text-sm">4K Ultra HD 🚁</p>
+                  <p className="text-white/90 text-sm">4K Ultra HD</p>
                   <div className="mt-4 text-white/80 text-xs">25+ sản phẩm</div>
                 </div>
               </div>
@@ -148,7 +139,7 @@ export default function HeroSection() {
                     <Laptop className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-white font-bold text-xl mb-2">Laptop</h3>
-                  <p className="text-white/90 text-sm">Hiệu năng cao 💻</p>
+                  <p className="text-white/90 text-sm">Hiệu năng cao</p>
                   <div className="mt-4 text-white/80 text-xs">30+ sản phẩm</div>
                 </div>
 
@@ -157,7 +148,7 @@ export default function HeroSection() {
                     <Smartphone className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-white font-bold text-xl mb-2">Dashcam</h3>
-                  <p className="text-white/90 text-sm">An toàn lái xe 🚗</p>
+                  <p className="text-white/90 text-sm">An toàn lái xe</p>
                   <div className="mt-4 text-white/80 text-xs">40+ sản phẩm</div>
                 </div>
               </div>
