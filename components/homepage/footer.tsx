@@ -37,7 +37,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-gray-400 mb-4">
-              🚀 Nền tảng cho thuê công nghệ hàng đầu Việt Nam. Mang đến trải
+              Nền tảng cho thuê công nghệ hàng đầu Việt Nam. Mang đến trải
               nghiệm công nghệ tốt nhất với chi phí hợp lý.
             </p>
             <div className="flex space-x-4">
@@ -70,7 +70,7 @@ export default function Footer() {
                   href="/products/camera"
                   className="hover:text-white transition-colors hover:translate-x-1 transform inline-block"
                 >
-                  📷 Camera
+                  Camera
                 </Link>
               </li>
               <li>
@@ -78,7 +78,7 @@ export default function Footer() {
                   href="/products/laptop"
                   className="hover:text-white transition-colors hover:translate-x-1 transform inline-block"
                 >
-                  💻 Laptop
+                  Laptop
                 </Link>
               </li>
               <li>
@@ -86,7 +86,7 @@ export default function Footer() {
                   href="/products/flycam"
                   className="hover:text-white transition-colors hover:translate-x-1 transform inline-block"
                 >
-                  🚁 Flycam
+                  Flycam
                 </Link>
               </li>
               <li>
@@ -94,7 +94,7 @@ export default function Footer() {
                   href="/products/dashcam"
                   className="hover:text-white transition-colors hover:translate-x-1 transform inline-block"
                 >
-                  🚗 Dashcam
+                  Dashcam
                 </Link>
               </li>
             </ul>
@@ -125,22 +125,6 @@ export default function Footer() {
                   className="hover:text-white transition-colors hover:translate-x-1 transform inline-block"
                 >
                   🛡️ Chính sách bảo hành
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/return"
-                  className="hover:text-white transition-colors hover:translate-x-1 transform inline-block"
-                >
-                  🔄 Đổi trả
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/news"
-                  className="hover:text-white transition-colors hover:translate-x-1 transform inline-block"
-                >
-                  📰 Tin tức
                 </Link>
               </li>
             </ul>

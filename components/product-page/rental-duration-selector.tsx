@@ -1,46 +1,90 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface RentalDurationSelectorProps {
-  basePrice: number;
+  singleDayPrice: number;
   onPriceChange: (price: number, duration: string) => void;
 }
 
+// Duration interface matching the API response structure
+interface Duration {
+  id: string;
+  jd: string;
+  length: string;
+  discount: number;
+  __v: number;
+}
+
 export default function RentalDurationSelector({
-  basePrice,
+  singleDayPrice,
   onPriceChange,
 }: RentalDurationSelectorProps) {
-  const [selectedDuration, setSelectedDuration] = useState("1-day");
+  const [selectedDuration, setSelectedDuration] = useState(
+    "683f9b4b1cf36ace6311c5be"
+  );
+  const [durations, setDurations] = useState<Duration[]>([]);
 
-  const durations = [
-    { id: "1-day", label: "1 ngày", multiplier: 1, discount: 0 },
-    { id: "7-days", label: "7 ngày", multiplier: 7, discount: 0.15 },
-    { id: "15-days", label: "15 ngày", multiplier: 15, discount: 0.25 },
-    { id: "30-days", label: "30 ngày", multiplier: 30, discount: 0.35 },
-  ];
+  // Mock API response matching the structure from image 2
+  useEffect(() => {
+    // Simulate API fetch for durations
+    const mockDurations: Duration[] = [
+      {
+        id: "683f9b4b1cf36ace6311c5be",
+        jd: "432e0188-441e-4ead-b117-7c2bba3cbe28",
+        length: "1 day",
+        discount: 0,
+        __v: 0,
+      },
+      {
+        id: "683f9b541cf36ace6311c5c0",
+        jd: "edc72edf-ce7d-4a40-9f50-f00c0dedb551",
+        length: "7 days",
+        discount: 15,
+        __v: 0,
+      },
+      {
+        id: "683f9b671cf36ace6311c5c2",
+        jd: "ab211d47-1ea5-4b61-afd8-a859dbc7b00c",
+        length: "15 days",
+        discount: 25,
+        __v: 0,
+      },
+      {
+        id: "683f9b751cf36ace6311c5c4",
+        jd: "324fd55f-f7bd-41be-96e0-8bef758833da",
+        length: "30 days",
+        discount: 35,
+        __v: 0,
+      },
+    ];
 
-  const calculatePrice = (multiplier: number, discount: number) => {
-    const totalPrice = basePrice * multiplier;
-    const discountedPrice = totalPrice * (1 - discount);
+    setDurations(mockDurations);
+  }, []);
+
+  const calculatePrice = (duration: Duration) => {
+    const days = Number.parseInt(duration.length.split(" ")[0]);
+    const totalPrice = singleDayPrice * days;
+    const discountedPrice = totalPrice * (1 - duration.discount / 100);
     return Math.round(discountedPrice);
   };
 
-  const handleDurationChange = (duration: (typeof durations)[0]) => {
+  const handleDurationChange = (duration: Duration) => {
     setSelectedDuration(duration.id);
-    const finalPrice = calculatePrice(duration.multiplier, duration.discount);
-    onPriceChange(finalPrice, duration.label);
+    const finalPrice = calculatePrice(duration);
+    onPriceChange(finalPrice, duration.length);
   };
+
+  if (durations.length === 0) {
+    return <div>Loading durations...</div>;
+  }
 
   return (
     <div className="space-y-3">
       <h4 className="font-medium text-gray-900">Thời gian thuê:</h4>
       <div className="grid grid-cols-2 gap-2">
         {durations.map((duration) => {
-          const finalPrice = calculatePrice(
-            duration.multiplier,
-            duration.discount
-          );
+          const finalPrice = calculatePrice(duration);
           const isSelected = selectedDuration === duration.id;
 
           return (
@@ -53,7 +97,7 @@ export default function RentalDurationSelector({
               }`}
               onClick={() => handleDurationChange(duration)}
             >
-              <span className="font-medium">{duration.label}</span>
+              <span className="font-medium">{duration.length}</span>
               <span
                 className={`text-sm ${
                   isSelected ? "text-blue-100" : "text-gray-600"
@@ -67,7 +111,7 @@ export default function RentalDurationSelector({
                     isSelected ? "text-blue-200" : "text-green-600"
                   }`}
                 >
-                  Tiết kiệm {Math.round(duration.discount * 100)}%
+                  Tiết kiệm {duration.discount}%
                 </span>
               )}
             </button>

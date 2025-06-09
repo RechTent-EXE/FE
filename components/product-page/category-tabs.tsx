@@ -35,7 +35,7 @@ export default function CategoryTabs() {
   ];
 
   return (
-    <div className="bg-white sticky top-[70px] z-40">
+    <div className="bg-white sticky top-[70px] z-40 border-b border-gray-200">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-center space-x-2 overflow-x-auto">
           {categories.map((category) => {
@@ -47,8 +47,8 @@ export default function CategoryTabs() {
                 <button
                   className={`flex items-center gap-2 whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-lg font-medium ${
                     isActive
-                      ? `${category.color} hover:opacity-90 text-white`
-                      : "hover:bg-gray-50 border border-gray-200 text-gray-700"
+                      ? `${category.color} hover:opacity-90 text-white shadow-lg`
+                      : "hover:bg-gray-50 border border-gray-200 text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   <IconComponent className="w-4 h-4" />

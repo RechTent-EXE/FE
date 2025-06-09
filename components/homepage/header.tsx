@@ -7,12 +7,12 @@ import {
   Search,
   Heart,
   ShoppingCart,
-  User,
   ChevronDown,
   Menu,
   X,
   Sparkles,
 } from "lucide-react";
+import UserProfile from "@/components/auth/UserProfile";
 
 export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -112,7 +112,7 @@ export default function Header() {
               {isShopOpen && (
                 <div className="absolute top-full left-0 mt-2 w-64 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-2xl z-50 animate-slide-down overflow-hidden">
                   <div className="p-2">
-                    {categories.map((category, index) => (
+                    {categories.map((category) => (
                       <Link
                         key={category.name}
                         href={category.href}
@@ -184,9 +184,8 @@ export default function Header() {
               </span>
             </button>
 
-            <button className="p-2.5 hover:bg-gray-100 rounded-full transition-all duration-200 group">
-              <User className="w-5 h-5 text-gray-600 group-hover:text-green-500 transition-colors" />
-            </button>
+            {/* User Profile - replaced with UserProfile component */}
+            <UserProfile />
 
             {/* Mobile Menu Button */}
             <button

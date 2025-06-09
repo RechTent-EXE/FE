@@ -2,49 +2,183 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Star, Heart, ShoppingCart } from "lucide-react";
+import { Star, Heart, ShoppingCart, Eye } from "lucide-react";
 import RentalDurationSelector from "./rental-duration-selector";
+import { useRouter } from "next/navigation";
 
+// Updated interface to match database schema
 interface ProductCardProps {
   product: {
-    id: number;
+    id: string;
     name: string;
-    description: string;
-    basePrice: number;
-    originalPrice: number;
+    type: string;
     rating: number;
-    reviews: number;
-    image: string;
-    category: string;
-    badge?: string;
-    brand: string;
-    features: string[];
+    brandId: string;
+    description: string;
+    detailDescription: string;
+    techSpec: string;
+    isVerified: boolean;
+    isAvailable: boolean;
+    altText: string;
+    price: number; // Product price
+    singleDayPrice: number; // Daily rental price
+    images: string[];
   };
+  viewMode?: "grid" | "list";
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
-  const [currentPrice, setCurrentPrice] = useState(product.basePrice);
-  const [selectedDuration, setSelectedDuration] = useState("1 ngày");
+export default function ProductCard({
+  product,
+  viewMode = "grid",
+}: ProductCardProps) {
+  const [currentPrice, setCurrentPrice] = useState(product.singleDayPrice);
+  const [selectedDuration, setSelectedDuration] = useState("1 day");
   const [isLiked, setIsLiked] = useState(false);
+  const router = useRouter();
 
   const handlePriceChange = (price: number, duration: string) => {
     setCurrentPrice(price);
     setSelectedDuration(duration);
   };
 
+  const handleProductClick = () => {
+    router.push(`/products/${product.type.toLowerCase()}/${product.id}`);
+  };
+
+  // Get brand name from brandId (in real app, this would be fetched from brands table)
+  const getBrandName = (brandId: string) => {
+    const brands: { [key: string]: string } = {
+      canon: "Canon",
+      sony: "Sony",
+      nikon: "Nikon",
+      apple: "Apple",
+      dell: "Dell",
+      xiaomi: "Xiaomi",
+      dji: "DJI",
+    };
+    return brands[brandId] || brandId;
+  };
+
+  if (viewMode === "list") {
+    return (
+      <div
+        className="group hover:shadow-xl transition-all duration-300 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden cursor-pointer"
+        onClick={handleProductClick}
+      >
+        <div className="flex">
+          <div className="relative w-64 h-48 flex-shrink-0">
+            <Image
+              src={product.images[0] || "/placeholder.svg"}
+              alt={product.altText}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            {product.isVerified && (
+              <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">
+                Đã xác minh
+              </span>
+            )}
+            <button
+              className={`absolute top-3 right-3 p-2 rounded-lg transition-colors ${
+                isLiked
+                  ? "bg-red-100 text-red-600 hover:bg-red-200"
+                  : "bg-white/80 hover:bg-white"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLiked(!isLiked);
+              }}
+            >
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+            </button>
+          </div>
+
+          <div className="flex-1 p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                  {getBrandName(product.brandId)}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span className="text-sm text-gray-600">
+                    {product.rating}
+                  </span>
+                </div>
+                <span
+                  className={`px-2 py-1 rounded text-xs ${
+                    product.isAvailable
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {product.isAvailable ? "Còn hàng" : "Hết hàng"}
+                </span>
+              </div>
+
+              <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+                {product.name}
+              </h3>
+              <p className="text-gray-600 mb-3">{product.description}</p>
+
+              {/* Product Price */}
+              <div className="mb-3">
+                <div className="text-sm text-gray-500">Giá sản phẩm:</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {product.price.toLocaleString()}đ
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-2xl font-bold text-blue-600">
+                  {currentPrice.toLocaleString()}đ
+                </span>
+                <div className="text-sm text-gray-500">
+                  cho {selectedDuration}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Eye className="w-4 h-4" />
+                  Xem chi tiết
+                </button>
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  disabled={!product.isAvailable}
+                >
+                  Thuê ngay
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="group hover:shadow-xl transition-all duration-300 border-0 overflow-hidden bg-white rounded-lg shadow-lg">
+    <div
+      className="group hover:shadow-xl transition-all duration-300 border-0 overflow-hidden bg-white rounded-lg shadow-lg cursor-pointer"
+      onClick={handleProductClick}
+    >
       <div className="relative">
         <Image
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
+          src={product.images[0] || "/placeholder.svg"}
+          alt={product.altText}
           width={400}
           height={300}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        {product.badge && (
-          <span className="absolute top-3 left-3 bg-white text-gray-900 px-2 py-1 rounded text-sm font-medium">
-            {product.badge}
+        {product.isVerified && (
+          <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">
+            Đã xác minh
           </span>
         )}
         <button
@@ -53,7 +187,10 @@ export default function ProductCard({ product }: ProductCardProps) {
               ? "bg-red-100 text-red-600 hover:bg-red-200"
               : "bg-white/80 hover:bg-white"
           }`}
-          onClick={() => setIsLiked(!isLiked)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsLiked(!isLiked);
+          }}
         >
           <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
         </button>
@@ -64,13 +201,21 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-              {product.brand}
+              {getBrandName(product.brandId)}
             </span>
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
               <span className="text-sm text-gray-600">{product.rating}</span>
-              <span className="text-sm text-gray-400">({product.reviews})</span>
             </div>
+            <span
+              className={`px-2 py-1 rounded text-xs ${
+                product.isAvailable
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {product.isAvailable ? "Còn hàng" : "Hết hàng"}
+            </span>
           </div>
 
           <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">
@@ -80,27 +225,18 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.description}
           </p>
 
-          {/* Features */}
-          <div className="flex flex-wrap gap-1 mb-3">
-            {product.features.slice(0, 2).map((feature, index) => (
-              <span
-                key={index}
-                className="border border-gray-300 text-gray-700 px-2 py-1 rounded text-xs"
-              >
-                {feature}
-              </span>
-            ))}
-            {product.features.length > 2 && (
-              <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded text-xs">
-                +{product.features.length - 2}
-              </span>
-            )}
+          {/* Product Price */}
+          <div className="mb-3">
+            <div className="text-xs text-gray-500">Giá sản phẩm:</div>
+            <div className="text-sm font-bold text-gray-900">
+              {product.price.toLocaleString()}đ
+            </div>
           </div>
         </div>
 
         {/* Rental Duration Selector */}
         <RentalDurationSelector
-          basePrice={product.basePrice}
+          singleDayPrice={product.singleDayPrice}
           onPriceChange={handlePriceChange}
         />
 
@@ -116,15 +252,10 @@ export default function ProductCard({ product }: ProductCardProps) {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-400 line-through">
-                {product.originalPrice.toLocaleString()}đ
-              </div>
               <div className="text-xs text-green-600">
                 Tiết kiệm{" "}
                 {Math.round(
-                  ((product.originalPrice - currentPrice) /
-                    product.originalPrice) *
-                    100
+                  (1 - product.singleDayPrice / (product.price * 0.1)) * 100
                 )}
                 %
               </div>
@@ -132,11 +263,18 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
 
           <div className="flex gap-2">
-            <button className="flex-1 border border-gray-300 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-1">
+            <button
+              className="flex-1 border border-gray-300 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <ShoppingCart className="w-4 h-4" />
               Thêm vào giỏ
             </button>
-            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors">
+            <button
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400"
+              onClick={(e) => e.stopPropagation()}
+              disabled={!product.isAvailable}
+            >
               Thuê ngay
             </button>
           </div>

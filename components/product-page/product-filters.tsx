@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Filter, X } from "lucide-react";
+import { Filter, X, ChevronDown } from "lucide-react";
 
 interface ProductFiltersProps {
   category: string;
@@ -12,17 +12,22 @@ export default function ProductFilters({ category }: ProductFiltersProps) {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    price: true,
+    brands: true,
+    features: true,
+  });
 
   const getBrands = (category: string) => {
     switch (category) {
       case "camera":
-        return ["Canon", "Nikon", "Sony", "Fujifilm", "Panasonic"];
+        return ["Canon", "Nikon", "Sony", "Fujifilm", "Panasonic", "Olympus"];
       case "laptop":
-        return ["Apple", "Dell", "HP", "Lenovo", "ASUS", "MSI"];
+        return ["Apple", "Dell", "HP", "Lenovo", "ASUS", "MSI", "Acer"];
       case "dashcam":
-        return ["Xiaomi", "Viofo", "Garmin", "BlackVue", "Thinkware"];
+        return ["Xiaomi", "Viofo", "Garmin", "BlackVue", "Thinkware", "70mai"];
       case "flycam":
-        return ["DJI", "Autel", "Parrot", "Skydio", "Holy Stone"];
+        return ["DJI", "Autel", "Parrot", "Skydio", "Holy Stone", "Hubsan"];
       default:
         return [];
     }
@@ -37,11 +42,26 @@ export default function ProductFilters({ category }: ProductFiltersProps) {
           "Touchscreen",
           "Weather Sealed",
           "Full Frame",
+          "Image Stabilization",
         ];
       case "laptop":
-        return ["Gaming", "Ultrabook", "Touchscreen", "SSD", "Dedicated GPU"];
+        return [
+          "Gaming",
+          "Ultrabook",
+          "Touchscreen",
+          "SSD",
+          "Dedicated GPU",
+          "Backlit Keyboard",
+        ];
       case "dashcam":
-        return ["4K Recording", "Night Vision", "GPS", "WiFi", "Parking Mode"];
+        return [
+          "4K Recording",
+          "Night Vision",
+          "GPS",
+          "WiFi",
+          "Parking Mode",
+          "G-Sensor",
+        ];
       case "flycam":
         return [
           "4K Camera",
@@ -49,6 +69,7 @@ export default function ProductFilters({ category }: ProductFiltersProps) {
           "GPS",
           "Follow Me",
           "Obstacle Avoidance",
+          "Return to Home",
         ];
       default:
         return [];
@@ -78,78 +99,119 @@ export default function ProductFilters({ category }: ProductFiltersProps) {
     setSelectedFeatures([]);
   };
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   const FilterContent = () => (
     <div className="space-y-6">
       {/* Price Range */}
       <div>
-        <h3 className="font-semibold text-gray-900 mb-4">
+        <button
+          onClick={() => toggleSection("price")}
+          className="flex items-center justify-between w-full font-semibold text-gray-900 mb-4"
+        >
           Khoảng giá (VNĐ/ngày)
-        </h3>
-        <div className="px-2">
-          <input
-            type="range"
-            min="0"
-            max="2000000"
-            step="50000"
-            value={priceRange[1]}
-            onChange={(e) =>
-              setPriceRange([0, Number.parseInt(e.target.value)])
-            }
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-4"
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${
+              expandedSections.price ? "rotate-180" : ""
+            }`}
           />
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>{priceRange[0].toLocaleString()}đ</span>
-            <span>{priceRange[1].toLocaleString()}đ</span>
+        </button>
+        {expandedSections.price && (
+          <div className="px-2">
+            <input
+              type="range"
+              min="0"
+              max="2000000"
+              step="50000"
+              value={priceRange[1]}
+              onChange={(e) =>
+                setPriceRange([0, Number.parseInt(e.target.value)])
+              }
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-4 slider"
+            />
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>{priceRange[0].toLocaleString()}đ</span>
+              <span>{priceRange[1].toLocaleString()}đ</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Brands */}
       <div>
-        <h3 className="font-semibold text-gray-900 mb-4">Thương hiệu</h3>
-        <div className="space-y-3">
-          {brands.map((brand) => (
-            <div key={brand} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id={brand}
-                checked={selectedBrands.includes(brand)}
-                onChange={() => toggleBrand(brand)}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor={brand}
-                className="text-sm text-gray-700 cursor-pointer"
-              >
-                {brand}
-              </label>
-            </div>
-          ))}
-        </div>
+        <button
+          onClick={() => toggleSection("brands")}
+          className="flex items-center justify-between w-full font-semibold text-gray-900 mb-4"
+        >
+          Thương hiệu
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${
+              expandedSections.brands ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {expandedSections.brands && (
+          <div className="space-y-3 max-h-48 overflow-y-auto">
+            {brands.map((brand) => (
+              <div key={brand} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id={brand}
+                  checked={selectedBrands.includes(brand)}
+                  onChange={() => toggleBrand(brand)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label
+                  htmlFor={brand}
+                  className="text-sm text-gray-700 cursor-pointer"
+                >
+                  {brand}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Features */}
       <div>
-        <h3 className="font-semibold text-gray-900 mb-4">Tính năng</h3>
-        <div className="space-y-3">
-          {features.map((feature) => (
-            <div key={feature} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id={feature}
-                checked={selectedFeatures.includes(feature)}
-                onChange={() => toggleFeature(feature)}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor={feature}
-                className="text-sm text-gray-700 cursor-pointer"
-              >
-                {feature}
-              </label>
-            </div>
-          ))}
-        </div>
+        <button
+          onClick={() => toggleSection("features")}
+          className="flex items-center justify-between w-full font-semibold text-gray-900 mb-4"
+        >
+          Tính năng
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${
+              expandedSections.features ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {expandedSections.features && (
+          <div className="space-y-3 max-h-48 overflow-y-auto">
+            {features.map((feature) => (
+              <div key={feature} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id={feature}
+                  checked={selectedFeatures.includes(feature)}
+                  onChange={() => toggleFeature(feature)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label
+                  htmlFor={feature}
+                  className="text-sm text-gray-700 cursor-pointer"
+                >
+                  {feature}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Clear Filters */}
@@ -202,7 +264,7 @@ export default function ProductFilters({ category }: ProductFiltersProps) {
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              <div className="p-4 overflow-y-auto h-full">
+              <div className="p-4 overflow-y-auto h-full pb-20">
                 <FilterContent />
               </div>
             </div>
@@ -216,7 +278,7 @@ export default function ProductFilters({ category }: ProductFiltersProps) {
           {selectedBrands.map((brand) => (
             <span
               key={brand}
-              className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+              className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm flex items-center gap-1"
             >
               {brand}
               <X
@@ -228,7 +290,7 @@ export default function ProductFilters({ category }: ProductFiltersProps) {
           {selectedFeatures.map((feature) => (
             <span
               key={feature}
-              className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+              className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm flex items-center gap-1"
             >
               {feature}
               <X
