@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, User } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 export default function UserProfile() {
   const { user, isAuthenticated, logout, isLoading } = useAuth();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     try {
@@ -17,6 +19,20 @@ export default function UserProfile() {
       console.error("Logout error:", error);
     }
   };
+
+  // Close dropdown if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   if (isLoading) {
     return (
@@ -46,27 +62,40 @@ export default function UserProfile() {
     );
   }
 
-  const displayName = user.fullname || user.email;
-
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-          <User size={16} className="text-white" />
-        </div>
-        <span className="text-gray-700 font-medium" title={user.email}>
-          {displayName}
-        </span>
-      </div>
-
+    <div className="relative" ref={dropdownRef}>
       <button
-        onClick={handleLogout}
-        className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
-        title="Đăng xuất"
+        onClick={() => setOpen(!open)}
+        className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+        title="Tài khoản"
       >
-        <LogOut size={16} />
-        <span className="hidden sm:inline">Đăng xuất</span>
+        <User size={16} className="text-white" />
       </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 min-w-[14rem] max-w-xs bg-white rounded-lg shadow-lg border z-50 p-3 break-words">
+          <div className="text-sm text-gray-700 font-medium mb-2">
+            {user.email}
+          </div>
+          <button
+            onClick={() => {
+              router.push("/user/profile");
+              setOpen(false);
+            }}
+            className="w-full text-left flex items-center gap-2 px-2 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition"
+          >
+            <User size={16} />
+            <span>Hồ sơ</span>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full text-left flex items-center gap-2 px-2 py-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-md transition"
+          >
+            <LogOut size={16} />
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

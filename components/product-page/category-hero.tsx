@@ -1,3 +1,4 @@
+"use client";
 import type React from "react";
 import Image from "next/image";
 
@@ -12,29 +13,25 @@ const CategoryHero: React.FC<CategoryHeroProps> = ({ category }) => {
       description:
         "Thuê camera chuyên nghiệp cho mọi nhu cầu chụp ảnh và quay video",
       gradient: "from-blue-500 to-purple-600",
-      productImage: "/placeholder.svg?height=400&width=800",
-      emoji: "📷",
+      productImage: "/images/category-hero-images/camera.jpg",
     },
     laptop: {
       title: "Laptop",
       description: "Laptop hiệu năng cao cho công việc, học tập và giải trí",
       gradient: "from-purple-500 to-pink-600",
-      productImage: "/placeholder.svg?height=400&width=800",
-      emoji: "💻",
+      productImage: "/images/category-hero-images/laptop.jpg",
     },
     dashcam: {
       title: "Dashcam",
       description: "Camera hành trình đảm bảo an toàn khi lái xe",
       gradient: "from-orange-500 to-red-600",
-      productImage: "/placeholder.svg?height=400&width=800",
-      emoji: "🚗",
+      productImage: "/images/category-hero-images/dashcam.jpg",
     },
     flycam: {
       title: "Flycam",
       description: "Flycam chuyên nghiệp cho quay phim và chụp ảnh từ trên cao",
       gradient: "from-green-500 to-emerald-600",
-      productImage: "/placeholder.svg?height=400&width=800",
-      emoji: "🚁",
+      productImage: "/images/category-hero-images/flycam.jpg",
     },
   };
 
@@ -45,49 +42,26 @@ const CategoryHero: React.FC<CategoryHeroProps> = ({ category }) => {
   }
 
   return (
-    <section className="relative w-full h-[400px] overflow-hidden">
-      {/* Background Image */}
+    <section className="relative w-full h-[300px] overflow-hidden">
+      {/* Image chiếm toàn bộ section */}
       <Image
-        src={data.productImage || "/placeholder.svg"}
-        alt={`${data.title} category`}
+        src={data.productImage}
+        alt={`${data.title} product`}
         fill
         className="object-cover"
         priority
       />
 
-      {/* Gradient Overlay */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-r ${data.gradient} opacity-80`}
-      ></div>
+      {/* Overlay (tuỳ chọn nếu muốn làm tối ảnh để dễ đọc text) */}
+      <div className="absolute inset-0 bg-black/40"></div>
 
-      {/* Content */}
+      {/* Nội dung text in đè lên ảnh */}
       <div className="absolute inset-0 flex items-center justify-center px-4">
-        <div className="text-center text-white max-w-4xl">
-          <div className="text-6xl mb-4">{data.emoji}</div>
-          <h1 className="text-5xl lg:text-6xl font-bold mb-6">{data.title}</h1>
-          <p className="text-xl lg:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-            {data.description}
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-4 text-white/80">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-white rounded-full"></span>
-              <span>Chất lượng cao</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-white rounded-full"></span>
-              <span>Giá cả hợp lý</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-white rounded-full"></span>
-              <span>Giao hàng nhanh</span>
-            </div>
-          </div>
+        <div className="text-center text-white max-w-2xl">
+          <h1 className="text-5xl font-bold mb-4">{data.title}</h1>
+          <p className="text-xl text-white/90">{data.description}</p>
         </div>
       </div>
-
-      {/* Decorative Elements */}
-      <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
-      <div className="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
     </section>
   );
 };

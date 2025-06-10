@@ -70,6 +70,13 @@ export default function RegisterPage() {
   const validateForm = () => {
     const newErrors: Partial<RegisterFormData> = {};
 
+    // Full name validation
+    if (!formData.fullname.trim()) {
+      newErrors.fullname = "Vui lòng nhập họ và tên";
+    } else if (formData.fullname.trim().length < 2) {
+      newErrors.fullname = "Họ và tên phải có ít nhất 2 ký tự";
+    }
+
     // Email validation
     if (!formData.email.trim()) {
       newErrors.email = "Vui lòng nhập email";
@@ -82,43 +89,31 @@ export default function RegisterPage() {
       newErrors.password = "Vui lòng nhập mật khẩu";
     } else if (formData.password.length < 6) {
       newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password =
-        "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số";
     }
 
     // Confirm password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
-    }
-
-    // Fullname validation
-    if (!formData.fullname.trim()) {
-      newErrors.fullname = "Vui lòng nhập họ và tên";
-    } else if (formData.fullname.trim().length < 2) {
-      newErrors.fullname = "Họ và tên phải có ít nhất 2 ký tự";
+      newErrors.confirmPassword = "Mật khẩu không khớp";
     }
 
     // Phone validation
     if (!formData.phone.trim()) {
       newErrors.phone = "Vui lòng nhập số điện thoại";
-    } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ""))) {
-      newErrors.phone = "Số điện thoại không hợp lệ (10-11 số)";
+    } else if (!/^[0-9]{10,11}$/.test(formData.phone)) {
+      newErrors.phone = "Số điện thoại không hợp lệ";
     }
 
     // Address validation
     if (!formData.address.trim()) {
       newErrors.address = "Vui lòng nhập địa chỉ";
-    } else if (formData.address.trim().length < 5) {
-      newErrors.address = "Địa chỉ phải có ít nhất 5 ký tự";
     }
 
-    // Date of birth validation
+    // Date of birth validation - only on client side to avoid hydration mismatch
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = "Vui lòng nhập ngày sinh";
-    } else {
+    } else if (typeof window !== "undefined") {
       const birthDate = new Date(formData.dateOfBirth);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();

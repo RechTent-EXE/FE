@@ -72,8 +72,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const checkAuth = async () => {
+    // Only check auth on client side to avoid hydration mismatch
+    if (typeof window === "undefined" || !mounted) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const accessToken = getAccessToken();
@@ -120,9 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      console.log("Attempting login with:", { email, password: "***" });
       const response = await authAPI.login({ email, password });
-      console.log("Login response received:", response);
 
       // Store tokens
       setAccessToken(response.access_token);
@@ -130,18 +135,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Decode and set user
       const decodedUser = decodeToken(response.access_token);
-      console.log("Decoded user:", decodedUser);
       if (decodedUser) {
         setUser(decodedUser);
         setIsAuthenticated(true);
       }
     } catch (error: unknown) {
       console.error("Login failed:", error);
-      const axiosError = error as {
-        response?: { data?: unknown; status?: number };
-      };
-      console.error("Error response:", axiosError.response?.data);
-      console.error("Error status:", axiosError.response?.status);
       throw error;
     } finally {
       setIsLoading(false);
@@ -174,8 +173,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    checkAuth();
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      checkAuth();
+    }
+  }, [mounted]);
 
   const value: AuthContextType = {
     user,

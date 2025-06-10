@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { Star, Heart, ShoppingCart, Eye } from "lucide-react";
 import RentalDurationSelector from "./rental-duration-selector";
@@ -35,6 +35,13 @@ export default function ProductCard({
   const [selectedDuration, setSelectedDuration] = useState("1 day");
   const [isLiked, setIsLiked] = useState(false);
   const router = useRouter();
+
+  // Stable calculation to avoid hydration mismatch
+  const savingsPercentage = useMemo(() => {
+    return Math.round(
+      (1 - product.singleDayPrice / (product.price * 0.1)) * 100
+    );
+  }, [product.singleDayPrice, product.price]);
 
   const handlePriceChange = (price: number, duration: string) => {
     setCurrentPrice(price);
@@ -253,11 +260,7 @@ export default function ProductCard({
             </div>
             <div className="text-right">
               <div className="text-xs text-green-600">
-                Tiết kiệm{" "}
-                {Math.round(
-                  (1 - product.singleDayPrice / (product.price * 0.1)) * 100
-                )}
-                %
+                Tiết kiệm {savingsPercentage}%
               </div>
             </div>
           </div>
