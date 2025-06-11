@@ -30,6 +30,12 @@ export default function ProductCard({
     router.push(`/products/${product.type.toLowerCase()}/${product.id}`);
   };
 
+  const handleDurationSelect = (days: number, discount: number) => {
+    // Store selected duration data that can be passed to product detail
+    const duration = { days, discount, price: currentPrice };
+    sessionStorage.setItem("selectedDuration", JSON.stringify(duration));
+  };
+
   if (viewMode === "list") {
     return (
       <div
@@ -228,6 +234,7 @@ export default function ProductCard({
           singleDayPrice={product.singleDayPrice}
           durations={product.durations}
           onPriceChange={handlePriceChange}
+          onDurationSelect={handleDurationSelect}
         />
 
         {/* Price and Actions */}

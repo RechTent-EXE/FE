@@ -12,21 +12,23 @@ interface RentalDurationSelectorProps {
   singleDayPrice: number;
   durations?: Duration[];
   onPriceChange: (price: number, duration: string) => void;
+  onDurationSelect?: (days: number, discount: number) => void;
 }
 
 export default function RentalDurationSelector({
   singleDayPrice,
   durations = [],
   onPriceChange,
+  onDurationSelect,
 }: RentalDurationSelectorProps) {
   const [selectedDuration, setSelectedDuration] = useState("");
 
   // Default durations if none provided
   const defaultDurations: Duration[] = [
-    { duration: "1 day", price: singleDayPrice, discount: 0 },
-    { duration: "7 days", price: singleDayPrice * 7 * 0.85, discount: 15 },
-    { duration: "15 days", price: singleDayPrice * 15 * 0.75, discount: 25 },
-    { duration: "30 days", price: singleDayPrice * 30 * 0.65, discount: 35 },
+    { duration: "1 ngày", price: singleDayPrice, discount: 0 },
+    { duration: "7 ngày", price: singleDayPrice * 7 * 0.85, discount: 15 },
+    { duration: "15 ngày", price: singleDayPrice * 15 * 0.75, discount: 25 },
+    { duration: "30 ngày", price: singleDayPrice * 30 * 0.65, discount: 35 },
   ];
 
   const activeDurations = durations.length > 0 ? durations : defaultDurations;
@@ -43,6 +45,12 @@ export default function RentalDurationSelector({
   const handleDurationChange = (duration: Duration) => {
     setSelectedDuration(duration.duration);
     onPriceChange(duration.price, duration.duration);
+
+    // Extract number of days from duration string and call onDurationSelect
+    if (onDurationSelect) {
+      const days = parseInt(duration.duration.match(/\d+/)?.[0] || "1");
+      onDurationSelect(days, duration.discount);
+    }
   };
 
   return (

@@ -73,12 +73,64 @@ export default function ProductDetailPage({
   const [isLiked, setIsLiked] = useState(false);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [tokenUserId, setTokenUserId] = useState<string | null>(null);
+  const [selectedDurationFromCard, setSelectedDurationFromCard] = useState<{
+    days: number;
+    discount: number;
+    price: number;
+  } | null>(null);
+  const [isHighlightButton, setIsHighlightButton] = useState(false);
+  const [isHighlightSummary, setIsHighlightSummary] = useState(false);
 
-  // Get userId from token
+  // Get userId from token and selected duration from sessionStorage
   useEffect(() => {
     const userId = getUserIdFromToken();
     setTokenUserId(userId);
     console.log("Debug - userId from token:", userId);
+
+    // Check if user came from product card with selected duration
+    const savedDuration = sessionStorage.getItem("selectedDuration");
+    if (savedDuration) {
+      try {
+        const parsedDuration = JSON.parse(savedDuration);
+        setSelectedDurationFromCard(parsedDuration);
+        console.log("Debug - Selected duration from card:", parsedDuration);
+
+        // Auto-set the dates and rental days based on selected duration
+        const today = new Date();
+        const calculatedEndDate = new Date(today);
+        calculatedEndDate.setDate(today.getDate() + parsedDuration.days - 1);
+
+        setStartDate(today);
+        setEndDate(calculatedEndDate);
+        setRentalDays(parsedDuration.days);
+
+        // Immediately trigger highlight effects when redirected from options
+        setIsHighlightButton(true);
+        setIsHighlightSummary(true);
+
+        // Auto-scroll to rental summary section after a short delay
+        setTimeout(() => {
+          const summaryElement = document.getElementById("quantity-label");
+          if (summaryElement) {
+            summaryElement.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 1000); // Wait 1 second for page to fully load
+
+        // Remove highlight after 5 seconds
+        setTimeout(() => {
+          setIsHighlightButton(false);
+          setIsHighlightSummary(false);
+        }, 5000);
+
+        // Clear the sessionStorage after using
+        sessionStorage.removeItem("selectedDuration");
+      } catch (error) {
+        console.error("Error parsing saved duration:", error);
+      }
+    }
   }, []);
 
   // Resolve params first
@@ -159,6 +211,23 @@ export default function ProductDetailPage({
       setRentalDays(diffDays > 0 ? diffDays : 1);
     }
   }, [startDate, endDate]);
+
+  // Force enable button when auto-fill from options
+  useEffect(() => {
+    if (
+      selectedDurationFromCard &&
+      startDate &&
+      endDate &&
+      productData?.product
+    ) {
+      console.log("Debug - Auto-fill detected, enabling button:", {
+        selectedDurationFromCard,
+        startDate,
+        endDate,
+        isAvailable: productData.product.isAvailable,
+      });
+    }
+  }, [selectedDurationFromCard, startDate, endDate, productData]);
 
   const handleQuantityChange = (value: number) => {
     if (value >= 1 && value <= 10) {
@@ -246,14 +315,17 @@ export default function ProductDetailPage({
   }
 
   const { product, images } = productData;
+
+  const depositAmount = calculateDeposit(
+    product.actualPrice,
+    userProfile?.identityVerified || false
+  );
+
+  // Calculate discount info based on current rental days
   const discountInfo = calculateRentalDiscount(
     product.singleDayPrice,
     rentalDays,
     quantity,
-    product.actualPrice,
-    userProfile?.identityVerified || false
-  );
-  const depositAmount = calculateDeposit(
     product.actualPrice,
     userProfile?.identityVerified || false
   );
@@ -272,6 +344,23 @@ export default function ProductDetailPage({
   // Use actual review count if we have ratings data, otherwise use product rating as display rating
   const displayRating = averageRating;
   const reviewCount = ratings.length;
+
+  // Debug button state
+  console.log("Debug - Button state:", {
+    startDate,
+    endDate,
+    isAvailable: productData?.product?.isAvailable,
+    isHighlightButton,
+    disabled: !startDate || !endDate || !productData?.product?.isAvailable,
+  });
+
+  // Debug discount calculation
+  console.log("Debug - Discount calculation:", {
+    rentalDays,
+    singleDayPrice: product.singleDayPrice,
+    quantity,
+    discountInfo,
+  });
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-blue-50 pt-20 pb-16 min-h-screen">
@@ -510,7 +599,7 @@ export default function ProductDetailPage({
         </div>
 
         {/* Desktop Rental Form */}
-        <div className="hidden lg:block mt-12">
+        <div id="quantity-label" className="hidden lg:block mt-12">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
               <h3 className="text-2xl font-bold mb-2">Đặt thuê thiết bị</h3>
@@ -561,14 +650,30 @@ export default function ProductDetailPage({
                     <label className="block text-lg font-semibold text-gray-900 mb-3">
                       Thời gian thuê
                     </label>
-                    <RentalDatePicker onDateChange={handleDateChange} />
+                    <RentalDatePicker
+                      onDateChange={handleDateChange}
+                      initialStartDate={startDate}
+                      initialEndDate={endDate}
+                    />
                   </div>
                 </div>
 
                 {/* Price Summary */}
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-gray-900 mb-4">
-                    Tóm tắt đơn hàng
+                <div
+                  className={`rounded-xl p-6 transition-all duration-1000 ${
+                    isHighlightSummary
+                      ? "bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-300 shadow-lg animate-pulse"
+                      : "bg-gray-50"
+                  }`}
+                >
+                  <h4
+                    className={`text-lg font-bold mb-4 ${
+                      isHighlightSummary ? "text-green-700" : "text-gray-900"
+                    }`}
+                  >
+                    {isHighlightSummary
+                      ? "🎯 Tóm tắt đơn hàng (Đã áp dụng ưu đãi!)"
+                      : "Tóm tắt đơn hàng"}
                   </h4>
 
                   <div className="space-y-3 mb-6">
@@ -656,10 +761,26 @@ export default function ProductDetailPage({
                     <button
                       onClick={handleRentNow}
                       disabled={!startDate || !endDate || !product.isAvailable}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all hover:shadow-lg flex items-center justify-center gap-2"
+                      className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all hover:shadow-lg flex items-center justify-center gap-2 ${
+                        !startDate || !endDate || !product.isAvailable
+                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                          : isHighlightButton
+                          ? "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white animate-pulse shadow-lg ring-4 ring-green-200"
+                          : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                      }`}
                     >
                       <Calendar size={20} />
-                      Đặt thuê ngay
+                      {!startDate || !endDate || !product.isAvailable
+                        ? `Chưa đủ thông tin ${
+                            !startDate ? "(chưa có ngày bắt đầu)" : ""
+                          } ${!endDate ? "(chưa có ngày kết thúc)" : ""} ${
+                            !product.isAvailable
+                              ? "(sản phẩm không khả dụng)"
+                              : ""
+                          }`
+                        : isHighlightButton
+                        ? "🎉 Đặt thuê ngay với ưu đãi!"
+                        : "Đặt thuê ngay"}
                     </button>
                     <button className="w-full border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 py-4 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
                       <Truck size={20} />

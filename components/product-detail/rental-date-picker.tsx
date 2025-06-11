@@ -7,16 +7,28 @@ import { CalendarIcon } from "lucide-react";
 
 interface RentalDatePickerProps {
   onDateChange: (startDate: Date | null, endDate: Date | null) => void;
+  initialStartDate?: Date | null;
+  initialEndDate?: Date | null;
 }
 
 export default function RentalDatePicker({
   onDateChange,
+  initialStartDate = null,
+  initialEndDate = null,
 }: RentalDatePickerProps) {
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(initialStartDate);
+  const [endDate, setEndDate] = useState<Date | null>(initialEndDate);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
+
+  // Update internal state when initial props change
+  useEffect(() => {
+    if (initialStartDate !== null && initialEndDate !== null) {
+      setStartDate(initialStartDate);
+      setEndDate(initialEndDate);
+    }
+  }, [initialStartDate, initialEndDate]);
 
   useEffect(() => {
     onDateChange(startDate, endDate);
