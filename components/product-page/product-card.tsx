@@ -38,12 +38,21 @@ export default function ProductCard({
       >
         <div className="flex">
           <div className="relative w-64 h-48 flex-shrink-0">
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+            {product.image ? (
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gray-100 text-gray-400">
+                <div className="text-center">
+                  <div className="text-3xl mb-2">📷</div>
+                  <div className="text-sm">Không có ảnh</div>
+                </div>
+              </div>
+            )}
             {product.isVerified && (
               <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">
                 Đã xác minh
@@ -140,13 +149,22 @@ export default function ProductCard({
       onClick={handleProductClick}
     >
       <div className="relative">
-        <Image
-          src={product.image}
-          alt={product.name}
-          width={400}
-          height={300}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            width={400}
+            height={300}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400">
+            <div className="text-center">
+              <div className="text-3xl mb-2">📷</div>
+              <div className="text-sm">Không có ảnh</div>
+            </div>
+          </div>
+        )}
         {product.isVerified && (
           <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">
             Đã xác minh

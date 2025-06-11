@@ -27,6 +27,8 @@ export const useProducts = (category: string) => {
 
   // Load data when category changes
   useEffect(() => {
+    if (!category) return;
+
     const loadData = async () => {
       try {
         setLoading(true);

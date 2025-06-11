@@ -30,9 +30,13 @@ export default function UserProfile() {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [open]);
 
   if (isLoading) {
     return (

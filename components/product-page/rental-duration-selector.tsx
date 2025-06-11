@@ -38,7 +38,7 @@ export default function RentalDurationSelector({
       setSelectedDuration(firstDuration.duration);
       onPriceChange(firstDuration.price, firstDuration.duration);
     }
-  }, [activeDurations, selectedDuration, onPriceChange]);
+  }, [activeDurations.length, selectedDuration]);
 
   const handleDurationChange = (duration: Duration) => {
     setSelectedDuration(duration.duration);

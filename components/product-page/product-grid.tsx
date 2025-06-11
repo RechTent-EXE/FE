@@ -49,11 +49,11 @@ export default function ProductGrid({
   }, []);
 
   const sortOptions = [
-    { value: "popular", label: "Phổ biến nhất", icon: "🔥" },
-    { value: "price-low", label: "Giá thấp đến cao", icon: "💰" },
-    { value: "price-high", label: "Giá cao đến thấp", icon: "💎" },
-    { value: "rating", label: "Đánh giá cao nhất", icon: "⭐" },
-    { value: "name", label: "Tên A-Z", icon: "📝" },
+    { value: "popular", label: "Phổ biến nhất" },
+    { value: "price-low", label: "Giá thấp đến cao" },
+    { value: "price-high", label: "Giá cao đến thấp" },
+    { value: "rating", label: "Đánh giá cao nhất" },
+    { value: "name", label: "Tên A-Z" },
   ];
 
   const currentSort = sortOptions.find((option) => option.value === sortBy);

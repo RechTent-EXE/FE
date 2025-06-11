@@ -9,6 +9,11 @@ import {
   getRefreshToken,
   clearTokens,
 } from "../lib/api";
+import {
+  validateToken,
+  clearAccessToken,
+  getTokenPayload,
+} from "../lib/auth-utils";
 
 interface User {
   id: string;
@@ -52,18 +57,28 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-// Helper function to decode JWT token (simple implementation)
+// Helper function to decode JWT token using auth-utils
 const decodeToken = (token: string): User | null => {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (!token || typeof token !== "string" || token.trim() === "") {
+      console.warn("Invalid token provided to decodeToken");
+      return null;
+    }
+
+    const payload = getTokenPayload();
+    if (!payload) {
+      console.warn("Failed to get token payload");
+      return null;
+    }
+
     return {
-      id: payload.sub || payload.id,
-      email: payload.email,
-      // Note: fullname, phone, address, dateOfBirth are not in JWT payload
-      // They should be fetched from user profile API if needed
+      id: payload.sub || payload.id || payload.userId || "",
+      email: payload.email || "",
+      fullname: payload.fullname || payload.fullName,
     };
   } catch (error) {
     console.error("Error decoding token:", error);
+    clearAccessToken();
     return null;
   }
 };
@@ -84,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       const accessToken = getAccessToken();
-      if (accessToken) {
+      if (accessToken && validateToken()) {
         const decodedUser = decodeToken(accessToken);
         if (decodedUser) {
           setUser(decodedUser);

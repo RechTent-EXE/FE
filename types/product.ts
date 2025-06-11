@@ -60,6 +60,45 @@ export interface RentedProduct {
   durations: Duration[];
 }
 
+// Product Detail API Response
+export interface ProductDetailResponse {
+  product: Product;
+  images: ProductImage[];
+  durations: Duration[];
+}
+
+// Product Rating types
+export interface ProductRating {
+  _id?: string;
+  userId: string;
+  productId: string;
+  rating: number;
+  content: string;
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
+}
+
+export interface CreateProductRating {
+  userId: string;
+  productId: string;
+  rating: number;
+  content: string;
+}
+
+// User Profile types
+export interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  dateOfBirth: string | null;
+  identityType: string | null;
+  identityNumber: string;
+  identityFrontImage: string;
+  identityBackImage: string;
+  identityVerified: boolean;
+}
+
 export interface ProductFilters {
   brand?: string[];
   priceRange?: [number, number];
@@ -83,4 +122,13 @@ export interface ProductCardData {
     price: number;
     discount: number;
   }[];
+}
+
+// Discount calculation result
+export interface DiscountInfo {
+  totalPrice: number;
+  discountPercentage: number;
+  discountAmount: number;
+  finalPrice: number;
+  totalPayment: number; // finalPrice + deposit
 }
