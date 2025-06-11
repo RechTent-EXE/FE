@@ -69,7 +69,6 @@ export default function ProductRatingForm({
       // Reset form
       setRating(0);
       setContent("");
-      alert("Đánh giá của bạn đã được gửi thành công!");
     } catch (error) {
       console.error("Error submitting rating:", error);
       // Let the parent component handle the error display

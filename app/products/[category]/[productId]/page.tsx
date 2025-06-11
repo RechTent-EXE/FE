@@ -176,9 +176,6 @@ export default function ProductDetailPage({
       setIsSubmittingRating(true);
       const newRating = await createProductRating(rating);
       setRatings((prev) => [newRating, ...prev]);
-
-      // Show success message
-      alert("Đánh giá của bạn đã được gửi thành công!");
     } catch (error) {
       console.error("Error submitting rating:", error);
 
