@@ -13,6 +13,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "RechTent - Cho thuê công nghệ",
   description: "Nền tảng cho thuê thiết bị công nghệ hàng đầu Việt Nam",
+  icons: {
+    icon: "/images/logo.png",
+  },
 };
 
 export default function RootLayout({
