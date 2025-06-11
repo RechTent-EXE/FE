@@ -1,308 +1,222 @@
 "use client";
 
-import { useState } from "react";
-import { Grid, List, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Grid, List, ArrowUpDown, Check } from "lucide-react";
 import ProductCard from "./product-card";
+import { RentedProduct, Brand, ProductType } from "@/types/product";
+import { transformProductData, sortProducts } from "@/utils/productUtils";
 
 interface ProductGridProps {
-  category: string;
+  products: RentedProduct[];
+  brands: Brand[];
+  productTypes?: ProductType[];
+  loading: boolean;
 }
 
-// Updated to match database schema
-interface Product {
-  id: string;
-  name: string;
-  type: string;
-  rating: number;
-  brandId: string;
-  description: string;
-  detailDescription: string;
-  techSpec: string;
-  isVerified: boolean;
-  isAvailable: boolean;
-  altText: string;
-  price: number; // Added price attribute
-  singleDayPrice: number;
-  images: string[];
-}
-
-// Duration interface matching the API response
-interface Duration {
-  id: string;
-  jd: string;
-  length: string;
-  discount: number;
-  __v: number;
-}
-
-export default function ProductGrid({ category }: ProductGridProps) {
+export default function ProductGrid({
+  products,
+  brands,
+  productTypes = [],
+  loading,
+}: ProductGridProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("popular");
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 
-  // Mock data matching database schema
-  const getProductsByCategory = (category: string): Product[] => {
-    const baseProducts = {
-      camera: [
-        {
-          id: "683f9b4b1cf36ace6311c5be",
-          name: "Canon EOS 700D Camera",
-          type: "DSLR",
-          rating: 5,
-          brandId: "canon",
-          description: "Với ống kính 18-55mm, phù hợp cho người mới bắt đầu",
-          detailDescription:
-            "Canon EOS 700D là máy ảnh DSLR entry-level hoàn hảo cho người mới bắt đầu...",
-          techSpec: "Cảm biến APS-C 18MP, ISO 100-12800, Video Full HD",
-          isVerified: true,
-          isAvailable: true,
-          altText: "Canon EOS 700D Camera with 18-55mm lens",
-          price: 25000000, // 25 million VND
-          singleDayPrice: 299000, // 299k per day
-          images: [
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-          ],
-        },
-        {
-          id: "683f9b4b1cf36ace6311c5bf",
-          name: "Canon EOS 550D 18MP DSLR",
-          type: "DSLR",
-          rating: 5,
-          brandId: "canon",
-          description:
-            "Máy ảnh chuyên nghiệp với chất lượng hình ảnh tuyệt vời",
-          detailDescription:
-            "Canon EOS 550D với cảm biến 18MP mang lại chất lượng hình ảnh xuất sắc...",
-          techSpec: "Cảm biến APS-C 18MP, ISO 100-6400, Video Full HD",
-          isVerified: true,
-          isAvailable: true,
-          altText: "Canon EOS 550D DSLR Camera",
-          price: 35000000, // 35 million VND
-          singleDayPrice: 399000, // 399k per day
-          images: [
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-          ],
-        },
-        {
-          id: "683f9b4b1cf36ace6311c5c0",
-          name: "Sony Alpha A7 III",
-          type: "Mirrorless",
-          rating: 5,
-          brandId: "sony",
-          description: "Mirrorless full-frame với hiệu năng vượt trội",
-          detailDescription:
-            "Sony A7 III là máy ảnh mirrorless full-frame với nhiều tính năng tiên tiến...",
-          techSpec: "Cảm biến Full-frame 24MP, ISO 100-51200, Video 4K",
-          isVerified: true,
-          isAvailable: true,
-          altText: "Sony Alpha A7 III Mirrorless Camera",
-          price: 55000000, // 55 million VND
-          singleDayPrice: 899000, // 899k per day
-          images: [
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-          ],
-        },
-        {
-          id: "683f9b4b1cf36ace6311c5c1",
-          name: "Nikon D850",
-          type: "DSLR",
-          rating: 5,
-          brandId: "nikon",
-          description: "DSLR chuyên nghiệp với độ phân giải cao",
-          detailDescription:
-            "Nikon D850 là máy ảnh DSLR chuyên nghiệp với cảm biến 45MP...",
-          techSpec: "Cảm biến Full-frame 45MP, ISO 64-25600, Video 4K",
-          isVerified: true,
-          isAvailable: true,
-          altText: "Nikon D850 DSLR Camera",
-          price: 85000000, // 85 million VND
-          singleDayPrice: 1299000, // 1.299M per day
-          images: ["/placeholder.svg?height=300&width=300"],
-        },
-      ],
-      laptop: [
-        {
-          id: "683f9b4b1cf36ace6311c5c2",
-          name: "MacBook Pro M3",
-          type: "Laptop",
-          rating: 5,
-          brandId: "apple",
-          description: "Laptop hiệu năng cao cho công việc chuyên nghiệp",
-          detailDescription:
-            "MacBook Pro M3 với chip Apple Silicon mới nhất...",
-          techSpec: "Chip M3, 16GB RAM, 512GB SSD, Màn hình Retina 14 inch",
-          isVerified: true,
-          isAvailable: true,
-          altText: "MacBook Pro M3 14-inch",
-          price: 65000000, // 65 million VND
-          singleDayPrice: 1299000, // 1.299M per day
-          images: [
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-          ],
-        },
-        {
-          id: "683f9b4b1cf36ace6311c5c3",
-          name: "Dell XPS 13",
-          type: "Ultrabook",
-          rating: 4,
-          brandId: "dell",
-          description: "Ultrabook mỏng nhẹ với hiệu năng mạnh mẽ",
-          detailDescription:
-            "Dell XPS 13 với thiết kế premium và hiệu năng mạnh mẽ...",
-          techSpec: "Intel Core i7, 16GB RAM, 512GB SSD, Màn hình 4K",
-          isVerified: true,
-          isAvailable: true,
-          altText: "Dell XPS 13 Ultrabook",
-          price: 45000000, // 45 million VND
-          singleDayPrice: 899000, // 899k per day
-          images: ["/placeholder.svg?height=300&width=300"],
-        },
-      ],
-      dashcam: [
-        {
-          id: "683f9b4b1cf36ace6311c5c4",
-          name: "Xiaomi 70mai Pro Plus+",
-          type: "Dashcam",
-          rating: 4,
-          brandId: "xiaomi",
-          description: "Camera hành trình 4K với GPS tích hợp",
-          detailDescription:
-            "Xiaomi 70mai Pro Plus+ với khả năng quay 4K và GPS...",
-          techSpec: "Quay 4K, GPS tích hợp, Wifi, Cảm biến G",
-          isVerified: true,
-          isAvailable: true,
-          altText: "Xiaomi 70mai Pro Plus+ Dashcam",
-          price: 8000000, // 8 million VND
-          singleDayPrice: 199000, // 199k per day
-          images: [
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-          ],
-        },
-      ],
-      flycam: [
-        {
-          id: "683f9b4b1cf36ace6311c5c5",
-          name: "DJI Mavic 3 Pro",
-          type: "Drone",
-          rating: 5,
-          brandId: "dji",
-          description: "Flycam chuyên nghiệp với camera 4K",
-          detailDescription:
-            "DJI Mavic 3 Pro với camera Hasselblad và khả năng bay 46 phút...",
-          techSpec:
-            "Camera 4K Hasselblad, Bay 46 phút, Tầm xa 15km, Chống gió cấp 12",
-          isVerified: true,
-          isAvailable: true,
-          altText: "DJI Mavic 3 Pro Drone",
-          price: 120000000, // 120 million VND
-          singleDayPrice: 1599000, // 1.599M per day
-          images: [
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-            "/placeholder.svg?height=300&width=300",
-          ],
-        },
-      ],
+  // Sort products
+  const sortedProducts = useMemo(() => {
+    return sortProducts(products, sortBy);
+  }, [products, sortBy]);
+
+  // Transform products for display
+  const transformedProducts = useMemo(() => {
+    return sortedProducts.map((product) =>
+      transformProductData(product, brands, productTypes)
+    );
+  }, [sortedProducts, brands, productTypes]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".sort-dropdown")) {
+        setSortDropdownOpen(false);
+      }
     };
 
-    return baseProducts[category as keyof typeof baseProducts] || [];
-  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  const products = getProductsByCategory(category);
+  const sortOptions = [
+    { value: "popular", label: "Phổ biến nhất", icon: "🔥" },
+    { value: "price-low", label: "Giá thấp đến cao", icon: "💰" },
+    { value: "price-high", label: "Giá cao đến thấp", icon: "💎" },
+    { value: "rating", label: "Đánh giá cao nhất", icon: "⭐" },
+    { value: "name", label: "Tên A-Z", icon: "📝" },
+  ];
+
+  const currentSort = sortOptions.find((option) => option.value === sortBy);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* Toolbar Skeleton */}
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="animate-pulse bg-gray-200 h-6 w-24 rounded"></div>
+            <div className="flex items-center gap-4">
+              <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
+              <div className="animate-pulse bg-gray-200 h-8 w-32 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Products Grid Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden"
+            >
+              <div className="animate-pulse bg-gray-200 h-48 w-full"></div>
+              <div className="p-4 space-y-3">
+                <div className="animate-pulse bg-gray-200 h-4 w-3/4 rounded"></div>
+                <div className="animate-pulse bg-gray-200 h-4 w-1/2 rounded"></div>
+                <div className="animate-pulse bg-gray-200 h-6 w-1/3 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            {products.length} sản phẩm
-          </span>
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700">
+              {transformedProducts.length} sản phẩm
+            </span>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center border rounded-lg p-1">
-            <button
-              className={`h-8 px-3 rounded transition-colors ${
-                viewMode === "grid"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-              onClick={() => setViewMode("grid")}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              className={`h-8 px-3 rounded transition-colors ${
-                viewMode === "list"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-              onClick={() => setViewMode("list")}
-            >
-              <List className="w-4 h-4" />
-            </button>
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                className={`h-8 px-3 rounded-md transition-all duration-200 ${
+                  viewMode === "grid"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+                onClick={() => setViewMode("grid")}
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
+                className={`h-8 px-3 rounded-md transition-all duration-200 ${
+                  viewMode === "list"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+                onClick={() => setViewMode("list")}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Sort Options */}
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-gray-500" />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-48 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="popular">Phổ biến nhất</option>
-            <option value="price-low">Giá thấp đến cao</option>
-            <option value="price-high">Giá cao đến thấp</option>
-            <option value="rating">Đánh giá cao nhất</option>
-            <option value="newest">Mới nhất</option>
-          </select>
+          {/* Sort Dropdown */}
+          <div className="relative sort-dropdown">
+            <button
+              onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+            >
+              <ArrowUpDown className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">
+                {currentSort?.label}
+              </span>
+              <div
+                className={`transform transition-transform duration-200 ${
+                  sortDropdownOpen ? "rotate-180" : ""
+                }`}
+              >
+                <svg
+                  className="w-4 h-4 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {sortDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div className="p-1">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setSortDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
+                        sortBy === option.value
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="text-lg">{option.icon}</span>
+                      <span className="flex-1 text-sm font-medium">
+                        {option.label}
+                      </span>
+                      {sortBy === option.value && (
+                        <Check className="w-4 h-4 text-blue-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Product Grid */}
-      {products.length > 0 ? (
+      {/* Products */}
+      {transformedProducts.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <div className="text-6xl mb-4">📦</div>
+          <div className="text-gray-500 text-lg mb-2">
+            Không tìm thấy sản phẩm nào
+          </div>
+          <div className="text-gray-400 text-sm">
+            Thử thay đổi bộ lọc để xem thêm sản phẩm
+          </div>
+        </div>
+      ) : (
         <div
-          className={`grid gap-6 ${
+          className={
             viewMode === "grid"
-              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-              : "grid-cols-1"
-          }`}
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              : "space-y-4"
+          }
         >
-          {products.map((product) => (
+          {transformedProducts.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
               viewMode={viewMode}
             />
           ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <div className="text-6xl mb-4">📦</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Chưa có sản phẩm
-          </h3>
-          <p className="text-gray-600">
-            Danh mục này đang được cập nhật. Vui lòng quay lại sau!
-          </p>
-        </div>
-      )}
-
-      {/* Load More */}
-      {products.length > 0 && (
-        <div className="text-center pt-8">
-          <button className="border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-lg text-lg transition-colors">
-            Xem thêm sản phẩm
-          </button>
         </div>
       )}
     </div>

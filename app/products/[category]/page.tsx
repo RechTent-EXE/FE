@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import CategoryTabs from "@/components/product-page/category-tabs";
 import CategoryHero from "@/components/product-page/category-hero";
-import ProductFilters from "@/components/product-page/product-filters";
-import ProductGrid from "@/components/product-page/product-grid";
+import ProductPageClient from "./ProductPageClient";
 
 interface ProductPageProps {
   params: Promise<{
@@ -27,19 +26,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <CategoryHero category={category} />
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <ProductFilters category={category} />
-          </div>
-
-          {/* Products Grid */}
-          <div className="lg:col-span-3">
-            <ProductGrid category={category} />
-          </div>
-        </div>
-      </div>
+      <ProductPageClient category={category} />
     </div>
   );
 }

@@ -1,29 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Image from "next/image";
-import { Star, Heart, ShoppingCart, Eye } from "lucide-react";
+import { Star, Heart, Eye } from "lucide-react";
 import RentalDurationSelector from "./rental-duration-selector";
 import { useRouter } from "next/navigation";
+import { ProductCardData } from "@/types/product";
 
-// Updated interface to match database schema
 interface ProductCardProps {
-  product: {
-    id: string;
-    name: string;
-    type: string;
-    rating: number;
-    brandId: string;
-    description: string;
-    detailDescription: string;
-    techSpec: string;
-    isVerified: boolean;
-    isAvailable: boolean;
-    altText: string;
-    price: number; // Product price
-    singleDayPrice: number; // Daily rental price
-    images: string[];
-  };
+  product: ProductCardData;
   viewMode?: "grid" | "list";
 }
 
@@ -36,13 +21,6 @@ export default function ProductCard({
   const [isLiked, setIsLiked] = useState(false);
   const router = useRouter();
 
-  // Stable calculation to avoid hydration mismatch
-  const savingsPercentage = useMemo(() => {
-    return Math.round(
-      (1 - product.singleDayPrice / (product.price * 0.1)) * 100
-    );
-  }, [product.singleDayPrice, product.price]);
-
   const handlePriceChange = (price: number, duration: string) => {
     setCurrentPrice(price);
     setSelectedDuration(duration);
@@ -50,20 +28,6 @@ export default function ProductCard({
 
   const handleProductClick = () => {
     router.push(`/products/${product.type.toLowerCase()}/${product.id}`);
-  };
-
-  // Get brand name from brandId (in real app, this would be fetched from brands table)
-  const getBrandName = (brandId: string) => {
-    const brands: { [key: string]: string } = {
-      canon: "Canon",
-      sony: "Sony",
-      nikon: "Nikon",
-      apple: "Apple",
-      dell: "Dell",
-      xiaomi: "Xiaomi",
-      dji: "DJI",
-    };
-    return brands[brandId] || brandId;
   };
 
   if (viewMode === "list") {
@@ -75,8 +39,8 @@ export default function ProductCard({
         <div className="flex">
           <div className="relative w-64 h-48 flex-shrink-0">
             <Image
-              src={product.images[0] || "/placeholder.svg"}
-              alt={product.altText}
+              src={product.image}
+              alt={product.name}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
@@ -104,7 +68,7 @@ export default function ProductCard({
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                  {getBrandName(product.brandId)}
+                  {product.brand}
                 </span>
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -132,7 +96,7 @@ export default function ProductCard({
               <div className="mb-3">
                 <div className="text-sm text-gray-500">Giá sản phẩm:</div>
                 <div className="text-lg font-bold text-gray-900">
-                  {product.price.toLocaleString()}đ
+                  {product.actualPrice.toLocaleString()}đ
                 </div>
               </div>
             </div>
@@ -177,8 +141,8 @@ export default function ProductCard({
     >
       <div className="relative">
         <Image
-          src={product.images[0] || "/placeholder.svg"}
-          alt={product.altText}
+          src={product.image}
+          alt={product.name}
           width={400}
           height={300}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
@@ -208,7 +172,7 @@ export default function ProductCard({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-              {getBrandName(product.brandId)}
+              {product.brand}
             </span>
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -236,7 +200,7 @@ export default function ProductCard({
           <div className="mb-3">
             <div className="text-xs text-gray-500">Giá sản phẩm:</div>
             <div className="text-sm font-bold text-gray-900">
-              {product.price.toLocaleString()}đ
+              {product.actualPrice.toLocaleString()}đ
             </div>
           </div>
         </div>
@@ -244,37 +208,28 @@ export default function ProductCard({
         {/* Rental Duration Selector */}
         <RentalDurationSelector
           singleDayPrice={product.singleDayPrice}
+          durations={product.durations}
           onPriceChange={handlePriceChange}
         />
 
         {/* Price and Actions */}
-        <div className="space-y-3 pt-2 border-t">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-lg font-bold text-blue-600">
-                {currentPrice.toLocaleString()}đ
-              </span>
-              <div className="text-xs text-gray-500">
-                cho {selectedDuration}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-green-600">
-                Tiết kiệm {savingsPercentage}%
-              </div>
-            </div>
+        <div className="flex items-center justify-between pt-2">
+          <div>
+            <span className="text-xl font-bold text-blue-600">
+              {currentPrice.toLocaleString()}đ
+            </span>
+            <div className="text-xs text-gray-500">cho {selectedDuration}</div>
           </div>
 
           <div className="flex gap-2">
             <button
-              className="flex-1 border border-gray-300 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-1"
+              className="border border-gray-300 hover:bg-gray-50 p-2 rounded-lg transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
-              <ShoppingCart className="w-4 h-4" />
-              Thêm vào giỏ
+              <Heart className="w-4 h-4" />
             </button>
             <button
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
               onClick={(e) => e.stopPropagation()}
               disabled={!product.isAvailable}
             >
