@@ -5,8 +5,10 @@ import {
   ProductDetailResponse,
   ProductRating,
   CreateProductRating,
+  UserProfile,
 } from "@/types/product";
 import { getAccessToken } from "../api";
+import { getUserIdFromToken } from "../auth-utils";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
@@ -234,3 +236,35 @@ export async function fetchProductRating(
     return null;
   }
 }
+
+// Fetch user profile
+export const fetchUserProfile = async (): Promise<UserProfile | null> => {
+  try {
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    const token = getAccessToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch user profile");
+    }
+
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
