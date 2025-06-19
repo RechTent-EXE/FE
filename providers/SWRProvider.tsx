@@ -19,8 +19,7 @@ export default function SWRProvider({ children }: SWRProviderProps) {
         dedupingInterval: 2000, // Dedupe requests trong 2 giây
 
         // Error handling
-        onError: (error) => {
-          console.error("SWR Error:", error);
+        onError: () => {
           // Có thể thêm notification ở đây
         },
 

@@ -152,27 +152,13 @@ export default function RegisterPage() {
 
       // Redirect to login page after 2 seconds
       setTimeout(() => {
-        router.push("/auth/login");
+        router.push("/auth/login?message=registration-success");
       }, 2000);
-    } catch (error: unknown) {
-      console.error("Register error:", error);
-
-      // Handle different types of errors
-      const err = error as {
-        response?: { status: number; data?: { message?: string } };
-        code?: string;
-      };
-
-      if (err.response?.status === 409) {
-        setErrorMessage("Email này đã được sử dụng. Vui lòng chọn email khác");
-      } else if (err.response?.status === 400) {
-        const message =
-          err.response.data?.message || "Thông tin đăng ký không hợp lệ";
-        setErrorMessage(message);
-      } else if (err.code === "NETWORK_ERROR") {
-        setErrorMessage("Lỗi kết nối. Vui lòng kiểm tra internet và thử lại");
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
       } else {
-        setErrorMessage("Có lỗi xảy ra khi đăng ký. Vui lòng thử lại");
+        setErrorMessage("Đăng ký thất bại. Vui lòng thử lại.");
       }
     }
   };

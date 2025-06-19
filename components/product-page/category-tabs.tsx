@@ -13,18 +13,18 @@ export default function CategoryTabs() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadProductTypes = async () => {
+    const fetchData = async () => {
       try {
         const types = await fetchProductTypes();
         setProductTypes(types);
-      } catch (error) {
-        console.error("Failed to fetch product types:", error);
+      } catch {
+        // Silent error handling
       } finally {
         setLoading(false);
       }
     };
 
-    loadProductTypes();
+    fetchData();
   }, []);
 
   // Icon mapping for each category

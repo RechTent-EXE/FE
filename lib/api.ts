@@ -128,10 +128,7 @@ export interface AuthResponse {
 
 export const authAPI = {
   login: async (data: LoginData): Promise<AuthResponse> => {
-    console.log("Login API call - URL:", `${API_BASE_URL}/auth/login`);
-    console.log("Login API call - Data:", data);
     const response = await api.post("/auth/login", data);
-    console.log("Login API response:", response.data);
     return response.data;
   },
 
@@ -152,8 +149,8 @@ export const authAPI = {
     if (refreshToken) {
       try {
         await api.post("/auth/logout", { refreshToken });
-      } catch (error) {
-        console.error("Logout error:", error);
+      } catch {
+        // Silent error handling
       }
     }
     clearTokens();
@@ -173,8 +170,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 
     setAccessToken(newAccessToken);
     return newAccessToken;
-  } catch (error) {
-    console.error("Token refresh failed:", error);
+  } catch {
     clearTokens();
     return null;
   }

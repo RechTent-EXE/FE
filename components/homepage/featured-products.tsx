@@ -46,14 +46,13 @@ export default function FeaturedProducts() {
                 originalPrice: Math.round(transformedProduct.actualPrice * 1.3), // Mock original price
               });
             }
-          } catch (error) {
-            console.log(`No products found for ${type.name}`);
+          } catch {
+            // No products found for this type
           }
         }
 
         setFeaturedProducts(allProducts.slice(0, 4)); // Take only 4 products
-      } catch (error) {
-        console.error("Error fetching featured products:", error);
+      } catch {
         // Fallback to empty array
         setFeaturedProducts([]);
       } finally {

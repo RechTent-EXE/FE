@@ -85,7 +85,6 @@ export default function ProductDetailPage({
   useEffect(() => {
     const userId = getUserIdFromToken();
     setTokenUserId(userId);
-    console.log("Debug - userId from token:", userId);
 
     // Check if user came from product card with selected duration
     const savedDuration = sessionStorage.getItem("selectedDuration");
@@ -93,7 +92,6 @@ export default function ProductDetailPage({
       try {
         const parsedDuration = JSON.parse(savedDuration);
         setSelectedDurationFromCard(parsedDuration);
-        console.log("Debug - Selected duration from card:", parsedDuration);
 
         // Auto-set the dates and rental days based on selected duration
         const today = new Date();
@@ -127,9 +125,7 @@ export default function ProductDetailPage({
 
         // Clear the sessionStorage after using
         sessionStorage.removeItem("selectedDuration");
-      } catch (error) {
-        console.error("Error parsing saved duration:", error);
-      }
+      } catch {}
     }
   }, []);
 
@@ -160,20 +156,12 @@ export default function ProductDetailPage({
 
         // Try to fetch ratings, but don't fail if no data
         try {
-          console.log(
-            `Debug - Fetching ratings for product: ${resolvedParams.productId}`
-          );
-          console.log(
-            `Debug - Product detail productId: ${productDetail.product.productId}`
-          );
-
           const productRatings = await fetchProductRatings(
             resolvedParams.productId
           );
-          console.log(`Debug - Fetched ratings:`, productRatings);
+
           setRatings(productRatings || []);
-        } catch (error) {
-          console.log("No ratings data available, using empty array", error);
+        } catch {
           setRatings([]);
         }
 
@@ -194,8 +182,7 @@ export default function ProductDetailPage({
           setProductType(productType || null);
           setBrand(brand || null);
         }
-      } catch (error) {
-        console.error("Error fetching product data:", error);
+      } catch {
       } finally {
         setIsLoading(false);
       }
@@ -220,12 +207,6 @@ export default function ProductDetailPage({
       endDate &&
       productData?.product
     ) {
-      console.log("Debug - Auto-fill detected, enabling button:", {
-        selectedDurationFromCard,
-        startDate,
-        endDate,
-        isAvailable: productData.product.isAvailable,
-      });
     }
   }, [selectedDurationFromCard, startDate, endDate, productData]);
 
@@ -246,8 +227,6 @@ export default function ProductDetailPage({
       const newRating = await createProductRating(rating);
       setRatings((prev) => [newRating, ...prev]);
     } catch (error) {
-      console.error("Error submitting rating:", error);
-
       // Show user-friendly error message
       if (error instanceof Error) {
         if (error.message.includes("401")) {
@@ -344,23 +323,6 @@ export default function ProductDetailPage({
   // Use actual review count if we have ratings data, otherwise use product rating as display rating
   const displayRating = averageRating;
   const reviewCount = ratings.length;
-
-  // Debug button state
-  console.log("Debug - Button state:", {
-    startDate,
-    endDate,
-    isAvailable: productData?.product?.isAvailable,
-    isHighlightButton,
-    disabled: !startDate || !endDate || !productData?.product?.isAvailable,
-  });
-
-  // Debug discount calculation
-  console.log("Debug - Discount calculation:", {
-    rentalDays,
-    singleDayPrice: product.singleDayPrice,
-    quantity,
-    discountInfo,
-  });
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-blue-50 pt-20 pb-16 min-h-screen">

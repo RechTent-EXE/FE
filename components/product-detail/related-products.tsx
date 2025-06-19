@@ -47,9 +47,8 @@ export default function RelatedProducts({
         );
 
         setProducts(transformedProducts);
-      } catch (error) {
-        console.error("Error fetching related products:", error);
-        setProducts([]);
+      } catch {
+        // Silent error handling
       } finally {
         setLoading(false);
       }

@@ -48,30 +48,30 @@ export default function ProductRatingForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (rating === 0 || content.trim() === "") return;
 
-    // Validate required fields
     if (!productId || !userId) {
-      alert("Thiếu thông tin cần thiết để gửi đánh giá. Vui lòng thử lại.");
-      console.error("Missing productId or userId:", { productId, userId });
       return;
     }
 
-    const newRating: CreateProductRating = {
-      userId: userId,
-      productId: productId,
-      rating,
-      content: content.trim(),
-    };
+    if (rating === 0) {
+      alert("Vui lòng chọn số sao đánh giá");
+      return;
+    }
 
     try {
-      await onSubmit(newRating);
-      // Reset form
+      await onSubmit({
+        productId,
+        userId,
+        rating,
+        content: content.trim() || "",
+      });
+
+      // Reset form after successful submission
       setRating(0);
       setContent("");
-    } catch (error) {
-      console.error("Error submitting rating:", error);
-      // Let the parent component handle the error display
+      alert("Cảm ơn bạn đã đánh giá sản phẩm!");
+    } catch {
+      alert("Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại sau.");
     }
   };
 

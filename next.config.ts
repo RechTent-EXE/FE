@@ -7,13 +7,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ["placeholder.svg"],
     unoptimized: true,
   },
-  // Tắt hot reload tự động để tránh reload liên tục
+  // Tăng caching để giảm reload
   onDemandEntries: {
-    maxInactiveAge: 1000 * 60 * 60, // 1 tiếng
-    pagesBufferLength: 2,
+    maxInactiveAge: 60 * 60 * 1000, // 1h
+    pagesBufferLength: 5,
   },
 };
 

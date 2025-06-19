@@ -26,16 +26,13 @@ class ErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
-
-    // If it's a JWT-related error, clear the token
+  componentDidCatch(error: Error) {
+    // Handle JWT-related errors
     if (
       error.message.includes("split") ||
       error.message.includes("token") ||
       error.message.includes("JWT")
     ) {
-      console.warn("JWT-related error detected, clearing localStorage");
       if (typeof window !== "undefined") {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");

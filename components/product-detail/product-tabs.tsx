@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, Info, User } from "lucide-react";
+import { Star, MessageSquare, Info, User, List } from "lucide-react";
 import { ProductRating, CreateProductRating } from "@/types/product";
 import { calculateAverageRating } from "@/utils/productUtils";
 import { getFullNameFromToken, getUserIdFromToken } from "@/lib/auth-utils";
@@ -31,9 +31,14 @@ export default function ProductTabs({
     null
   );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   const averageRating = calculateAverageRating(ratings);
   const reviewCount = ratings.length;
+
+  // Limit displayed reviews to 3 initially
+  const displayedReviews = showAllReviews ? ratings : ratings.slice(0, 3);
+  const hasMoreReviews = ratings.length > 3;
 
   // Get current user info from token
   useEffect(() => {
@@ -82,7 +87,7 @@ export default function ProductTabs({
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
-          <ListIcon />
+          <List size={18} />
           Thông số kỹ thuật
         </button>
         <button
@@ -203,7 +208,7 @@ export default function ProductTabs({
                   Đánh giá từ khách hàng
                 </h4>
 
-                {ratings.map((rating) => (
+                {displayedReviews.map((rating) => (
                   <div
                     key={rating._id}
                     className="border-b border-gray-100 pb-6"
@@ -248,10 +253,20 @@ export default function ProductTabs({
                   </div>
                 ))}
 
-                {ratings.length > 3 && (
-                  <button className="w-full border border-gray-300 rounded-lg py-3 text-gray-700 hover:bg-gray-50 transition-colors font-medium">
-                    Xem thêm {ratings.length - 3} đánh giá
-                  </button>
+                {/* Show More/Less Reviews Button */}
+                {hasMoreReviews && (
+                  <div className="text-center">
+                    <button
+                      onClick={() => setShowAllReviews(!showAllReviews)}
+                      className="inline-flex items-center gap-2 border border-gray-300 rounded-lg py-3 px-6 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      {showAllReviews ? (
+                        <>Thu gọn đánh giá</>
+                      ) : (
+                        <>Xem thêm {ratings.length - 3} đánh giá</>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -259,28 +274,5 @@ export default function ProductTabs({
         )}
       </div>
     </div>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="8" y1="6" x2="21" y2="6"></line>
-      <line x1="8" y1="12" x2="21" y2="12"></line>
-      <line x1="8" y1="18" x2="21" y2="18"></line>
-      <line x1="3" y1="6" x2="3.01" y2="6"></line>
-      <line x1="3" y1="12" x2="3.01" y2="12"></line>
-      <line x1="3" y1="18" x2="3.01" y2="18"></line>
-    </svg>
   );
 }

@@ -67,21 +67,15 @@ export default function LoginPage() {
 
     try {
       await login(formData.email, formData.password);
-      // Login successful, redirect to home page
       router.push("/");
-    } catch (error: any) {
-      console.error("Login error:", error);
-
-      // Handle different types of errors
-      if (error.response?.status === 401) {
-        setErrorMessage("Email hoặc mật khẩu không chính xác");
-      } else if (error.response?.status === 400) {
-        setErrorMessage("Thông tin đăng nhập không hợp lệ");
-      } else if (error.code === "NETWORK_ERROR") {
-        setErrorMessage("Lỗi kết nối. Vui lòng kiểm tra internet và thử lại");
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
       } else {
-        setErrorMessage("Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại");
+        setErrorMessage("Đăng nhập thất bại. Vui lòng thử lại.");
       }
+    } finally {
+      setErrorMessage("");
     }
   };
 

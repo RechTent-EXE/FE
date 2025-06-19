@@ -5,7 +5,6 @@ import {
   ProductDetailResponse,
   ProductRating,
   CreateProductRating,
-  UserProfile,
 } from "@/types/product";
 import { getAccessToken } from "../api";
 
@@ -20,9 +19,8 @@ export const fetchProductTypes = async (): Promise<ProductType[]> => {
       throw new Error("Failed to fetch product types");
     }
     return await response.json();
-  } catch (error) {
-    console.error("Error fetching product types:", error);
-    throw error;
+  } catch {
+    throw new Error("Failed to fetch product types");
   }
 };
 
@@ -34,9 +32,8 @@ export const fetchBrands = async (): Promise<Brand[]> => {
       throw new Error("Failed to fetch brands");
     }
     return await response.json();
-  } catch (error) {
-    console.error("Error fetching brands:", error);
-    throw error;
+  } catch {
+    throw new Error("Failed to fetch brands");
   }
 };
 
@@ -52,9 +49,8 @@ export const fetchBrandsByType = async (
       throw new Error("Failed to fetch brands by type");
     }
     return await response.json();
-  } catch (error) {
-    console.error("Error fetching brands by type:", error);
-    throw error;
+  } catch {
+    throw new Error("Failed to fetch brands by type");
   }
 };
 
@@ -66,9 +62,8 @@ export const fetchRentedProducts = async (): Promise<RentedProduct[]> => {
       throw new Error("Failed to fetch rented products");
     }
     return await response.json();
-  } catch (error) {
-    console.error("Error fetching rented products:", error);
-    throw error;
+  } catch {
+    throw new Error("Failed to fetch rented products");
   }
 };
 
@@ -84,9 +79,8 @@ export const fetchRentedProductsByType = async (
       throw new Error("Failed to fetch rented products by type");
     }
     return await response.json();
-  } catch (error) {
-    console.error("Error fetching rented products by type:", error);
-    throw error;
+  } catch {
+    throw new Error("Failed to fetch rented products by type");
   }
 };
 
@@ -102,9 +96,8 @@ export const fetchProductDetail = async (
       throw new Error("Failed to fetch product detail");
     }
     return await response.json();
-  } catch (error) {
-    console.error("Error fetching product detail:", error);
-    throw error;
+  } catch {
+    throw new Error("Failed to fetch product detail");
   }
 };
 
@@ -113,45 +106,29 @@ export const fetchProductRatings = async (
   productId: string
 ): Promise<ProductRating[]> => {
   try {
-    console.log(`Debug - Fetching ratings for productId: ${productId}`);
-    console.log(
-      `Debug - API URL: ${API_BASE_URL}/product-ratings/${productId}`
-    );
-
     const response = await fetch(
       `${API_BASE_URL}/product-ratings/${productId}`
     );
 
-    console.log(`Debug - Response status: ${response.status}`);
-
     // If the endpoint doesn't exist or returns 404, try alternative endpoint
     if (!response.ok) {
       if (response.status === 404) {
-        console.log(
-          `No ratings found for product ${productId}, trying alternative endpoint`
-        );
-
         // Try alternative endpoint without productId filter
         try {
           const altResponse = await fetch(`${API_BASE_URL}/product-ratings`);
           if (altResponse.ok) {
             const allRatings = await altResponse.json();
-            console.log(`Debug - All ratings:`, allRatings);
 
             // Filter by productId manually
             if (Array.isArray(allRatings)) {
               const filteredRatings = allRatings.filter(
                 (rating: ProductRating) => rating.productId === productId
               );
-              console.log(
-                `Debug - Filtered ratings for ${productId}:`,
-                filteredRatings
-              );
               return filteredRatings;
             }
           }
-        } catch (altError) {
-          console.log("Alternative endpoint also failed:", altError);
+        } catch {
+          // Alternative endpoint failed
         }
 
         return [];
@@ -160,10 +137,8 @@ export const fetchProductRatings = async (
     }
 
     const data = await response.json();
-    console.log(`Debug - Ratings data:`, data);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error("Error fetching product ratings:", error);
+  } catch {
     // Return empty array instead of throwing error
     return [];
   }
@@ -197,26 +172,8 @@ export const createProductRating = async (
     }
     return await response.json();
   } catch (error) {
-    console.error("Error creating product rating:", error);
     throw error;
   }
-};
-
-// Mock user profile function - replace with actual API call
-export const fetchUserProfile = async (): Promise<UserProfile> => {
-  // In a real application, this would be an actual API call
-  // For now, returning mock data
-  return {
-    id: "user123",
-    email: "user@example.com",
-    fullName: "John Doe",
-    dateOfBirth: null,
-    identityType: null,
-    identityNumber: "",
-    identityFrontImage: "",
-    identityBackImage: "",
-    identityVerified: false, // Set to true to test verified user deposit
-  };
 };
 
 // Fetch products by filters (now only for price filtering since category is handled by API)
@@ -243,9 +200,8 @@ export const fetchProductsWithFilters = async (
 
       return true;
     });
-  } catch (error) {
-    console.error("Error filtering products:", error);
-    throw error;
+  } catch {
+    throw new Error("Failed to filter products");
   }
 };
 
@@ -274,11 +230,7 @@ export async function fetchProductRating(
 
     const data = await response.json();
     return data;
-  } catch (error) {
-    // Only log error if it's not a 404 (product not found)
-    if (error instanceof Error && !error.message.includes("404")) {
-      console.error("Error fetching product rating:", error);
-    }
+  } catch {
     return null;
   }
 }

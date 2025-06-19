@@ -15,8 +15,8 @@ export default function UserProfile() {
     try {
       await logout();
       router.push("/");
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch {
+      // Silent error handling
     }
   };
 
@@ -83,7 +83,7 @@ export default function UserProfile() {
           </div>
           <button
             onClick={() => {
-              router.push("/user/profile");
+              router.push("/profile");
               setOpen(false);
             }}
             className="w-full text-left flex items-center gap-2 px-2 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition"

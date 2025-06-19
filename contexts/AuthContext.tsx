@@ -61,13 +61,11 @@ interface AuthProviderProps {
 const decodeToken = (token: string): User | null => {
   try {
     if (!token || typeof token !== "string" || token.trim() === "") {
-      console.warn("Invalid token provided to decodeToken");
       return null;
     }
 
     const payload = getTokenPayload();
     if (!payload) {
-      console.warn("Failed to get token payload");
       return null;
     }
 
@@ -76,8 +74,7 @@ const decodeToken = (token: string): User | null => {
       email: payload.email || "",
       fullname: payload.fullname || payload.fullName,
     };
-  } catch (error) {
-    console.error("Error decoding token:", error);
+  } catch {
     clearAccessToken();
     return null;
   }
@@ -118,8 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setUser(newDecodedUser);
                 setIsAuthenticated(true);
               }
-            } catch (refreshError) {
-              console.error("Token refresh failed:", refreshError);
+            } catch {
               clearTokens();
               setUser(null);
               setIsAuthenticated(false);
@@ -130,8 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
       }
-    } catch (error) {
-      console.error("Auth check failed:", error);
+    } catch {
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -155,7 +150,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(true);
       }
     } catch (error: unknown) {
-      console.error("Login failed:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -167,7 +161,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       await authAPI.register(data);
     } catch (error) {
-      console.error("Registration failed:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -178,8 +171,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       await authAPI.logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
+    } catch {
+      // Silent error handling
     } finally {
       setUser(null);
       setIsAuthenticated(false);

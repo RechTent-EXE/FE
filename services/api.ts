@@ -2,8 +2,7 @@ import axios from "axios";
 
 // Tạo instance axios với config mặc định
 const apiClient = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL || "https://jsonplaceholder.typicode.com",
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -15,7 +14,11 @@ apiClient.interceptors.request.use(
   (config) => {
     // Thêm token từ localStorage hoặc cookie
     const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken") ||
+          sessionStorage.getItem("accessToken")
+        : null;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,8 +36,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Xử lý khi token hết hạn
       if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+        window.location.href = "/auth/login";
       }
     }
     return Promise.reject(error);
