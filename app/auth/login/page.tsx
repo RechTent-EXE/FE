@@ -2,8 +2,8 @@
 
 import type React from "react";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Sparkles } from "lucide-react";
@@ -24,6 +24,15 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message) {
+      setSuccessMessage(decodeURIComponent(message));
+    }
+  }, [searchParams]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,6 +45,10 @@ export default function LoginPage() {
     // Clear general error message
     if (errorMessage) {
       setErrorMessage("");
+    }
+    // Clear general success message
+    if (successMessage) {
+      setSuccessMessage("");
     }
   };
 
@@ -130,6 +143,12 @@ export default function LoginPage() {
             {errorMessage && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-600">{errorMessage}</p>
+              </div>
+            )}
+            {/* Error Message */}
+            {successMessage && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">{successMessage}</p>
               </div>
             )}
 
