@@ -13,12 +13,20 @@ import {
   Sparkles,
 } from "lucide-react";
 import UserProfile from "@/components/auth/UserProfile";
+import { useCart } from "@/hooks/useCart";
+import { useFavourites } from "@/hooks/useFavourites";
 
 export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { cartItems } = useCart();
+  const { favourites } = useFavourites();
+
+  // Force re-render when cartItems or favourites change
+  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const favouritesCount = favourites.length;
 
   useEffect(() => {
     setMounted(true);
@@ -178,19 +186,27 @@ export default function Header() {
             </div>
 
             {/* Action Buttons */}
-            <button className="relative p-2.5 hover:bg-gray-100 rounded-full transition-all duration-200 group">
-              <Heart className="w-5 h-5 text-gray-600 group-hover:text-red-500 transition-colors" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
-                2
-              </span>
-            </button>
+            <Link href="/favourites">
+              <button className="relative p-2.5 hover:bg-gray-100 rounded-full transition-all duration-200 group">
+                <Heart className="w-5 h-5 text-gray-600 group-hover:text-red-500 transition-colors" />
+                {favouritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                    {favouritesCount}
+                  </span>
+                )}
+              </button>
+            </Link>
 
-            <button className="relative p-2.5 hover:bg-gray-100 rounded-full transition-all duration-200 group">
-              <ShoppingCart className="w-5 h-5 text-gray-600 group-hover:text-blue-500 transition-colors" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
-                3
-              </span>
-            </button>
+            <Link href="/cart">
+              <button className="relative p-2.5 hover:bg-gray-100 rounded-full transition-all duration-200 group">
+                <ShoppingCart className="w-5 h-5 text-gray-600 group-hover:text-blue-500 transition-colors" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </Link>
 
             {/* User Profile - replaced with UserProfile component */}
             <UserProfile />

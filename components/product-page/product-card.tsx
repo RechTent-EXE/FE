@@ -2,24 +2,37 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Star, Heart, Eye } from "lucide-react";
+import { Star, Heart, Eye, Plus } from "lucide-react";
 import RentalDurationSelector from "./rental-duration-selector";
 import { useRouter } from "next/navigation";
 import { ProductCardData } from "@/types/product";
+import { useFavourites } from "@/hooks/useFavourites";
+import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProductCardProps {
   product: ProductCardData;
   viewMode?: "grid" | "list";
+  showFavouriteButton?: boolean;
+  showAddToCartButton?: boolean;
 }
 
 export default function ProductCard({
   product,
   viewMode = "grid",
+  showFavouriteButton = true,
+  showAddToCartButton = true,
 }: ProductCardProps) {
   const [currentPrice, setCurrentPrice] = useState(product.singleDayPrice);
   const [selectedDuration, setSelectedDuration] = useState("1 day");
-  const [isLiked, setIsLiked] = useState(false);
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const { isFavourite, toggleFavourite } = useFavourites();
+  const { addToCart } = useCart();
+
+  const isLiked = isFavourite(product.id);
+  const [isToggling, setIsToggling] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   const handlePriceChange = (price: number, duration: string) => {
     setCurrentPrice(price);
@@ -34,6 +47,65 @@ export default function ProductCard({
     // Store selected duration data that can be passed to product detail
     const duration = { days, discount, price: currentPrice };
     sessionStorage.setItem("selectedDuration", JSON.stringify(duration));
+  };
+
+  const handleToggleFavourite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      alert("Vui lòng đăng nhập để thêm vào yêu thích");
+      return;
+    }
+
+    if (isToggling) return;
+
+    try {
+      setIsToggling(true);
+      await toggleFavourite(product.id);
+    } catch (error) {
+      console.error("Error toggling favourite:", error);
+      alert("Có lỗi xảy ra khi cập nhật yêu thích");
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      alert("Vui lòng đăng nhập để thêm vào giỏ hàng");
+      return;
+    }
+
+    if (isAddingToCart) return;
+
+    try {
+      setIsAddingToCart(true);
+
+      // For demo purposes, using default dates. In real app, user would select dates
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 1); // Tomorrow
+      const endDate = new Date(startDate);
+
+      // Parse selected duration to get number of days
+      const durationDays = parseInt(selectedDuration.split(" ")[0]) || 1;
+      endDate.setDate(startDate.getDate() + durationDays);
+
+      await addToCart({
+        productId: product.id,
+        quantity: 1,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
+      });
+
+      alert("Đã thêm sản phẩm vào giỏ hàng!");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert("Có lỗi xảy ra khi thêm vào giỏ hàng");
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   if (viewMode === "list") {
@@ -64,19 +136,25 @@ export default function ProductCard({
                 Đã xác minh
               </span>
             )}
-            <button
-              className={`absolute top-3 right-3 p-2 rounded-lg transition-colors ${
-                isLiked
-                  ? "bg-red-100 text-red-600 hover:bg-red-200"
-                  : "bg-white/80 hover:bg-white"
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsLiked(!isLiked);
-              }}
-            >
-              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-            </button>
+            {showFavouriteButton && (
+              <button
+                className={`absolute top-3 right-3 p-2 rounded-lg transition-colors ${
+                  isLiked
+                    ? "bg-red-100 text-red-600 hover:bg-red-200"
+                    : "bg-white/80 hover:bg-white"
+                }`}
+                onClick={handleToggleFavourite}
+                disabled={isToggling}
+              >
+                {isToggling ? (
+                  <div className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Heart
+                    className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
+                  />
+                )}
+              </button>
+            )}
           </div>
 
           <div className="flex-1 p-6 flex flex-col justify-between">
@@ -134,6 +212,20 @@ export default function ProductCard({
                   <Eye className="w-4 h-4" />
                   Xem chi tiết
                 </button>
+                {showAddToCartButton && (
+                  <button
+                    className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                    onClick={handleAddToCart}
+                    disabled={isAddingToCart || !product.isAvailable}
+                  >
+                    {isAddingToCart ? (
+                      <div className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                    Giỏ hàng
+                  </button>
+                )}
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                   onClick={(e) => e.stopPropagation()}
@@ -176,19 +268,23 @@ export default function ProductCard({
             Đã xác minh
           </span>
         )}
-        <button
-          className={`absolute top-3 right-3 p-2 rounded-lg transition-colors ${
-            isLiked
-              ? "bg-red-100 text-red-600 hover:bg-red-200"
-              : "bg-white/80 hover:bg-white"
-          }`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsLiked(!isLiked);
-          }}
-        >
-          <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-        </button>
+        {showFavouriteButton && (
+          <button
+            className={`absolute top-3 right-3 p-2 rounded-lg transition-colors ${
+              isLiked
+                ? "bg-red-100 text-red-600 hover:bg-red-200"
+                : "bg-white/80 hover:bg-white"
+            }`}
+            onClick={handleToggleFavourite}
+            disabled={isToggling}
+          >
+            {isToggling ? (
+              <div className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+            )}
+          </button>
+        )}
       </div>
 
       <div className="p-4 space-y-4">
@@ -247,12 +343,20 @@ export default function ProductCard({
           </div>
 
           <div className="flex gap-2">
-            <button
-              className="border border-gray-300 hover:bg-gray-50 p-2 rounded-lg transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Heart className="w-4 h-4" />
-            </button>
+            {showAddToCartButton && (
+              <button
+                className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart || !product.isAvailable}
+                title="Thêm vào giỏ hàng"
+              >
+                {isAddingToCart ? (
+                  <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Plus className="w-3 h-3" />
+                )}
+              </button>
+            )}
             <button
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
               onClick={(e) => e.stopPropagation()}
