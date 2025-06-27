@@ -85,6 +85,6 @@ jobs:
           ssh admin@115.73.218.193 << EOF
             set -e
             cd /home/admin/Documents/rechtent
-            echo "${{ secrets.SSH_PASS }}" | sudo -S docker compose pull rechtent-backend
+            echo "${{ secrets.SSH_PASS }}" | sudo -S docker compose pull rechtent-frontend
             echo "${{ secrets.SSH_PASS }}" | sudo -S docker compose up -d
           EOF
