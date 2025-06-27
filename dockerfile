@@ -1,5 +1,5 @@
 # Step 1: Build the app
-FROM node:20-alpine AS builder 
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
@@ -8,15 +8,17 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Step 2: Use serve to run static files
-FROM node:20-alpine 
+# Step 2: Run the app
+FROM node:20-alpine
 WORKDIR /app
 
-# Install serve globally
-RUN npm install -g serve
+COPY package*.json ./
+RUN npm install --omit=dev
 
-# Copy built files from previous stage
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/package*.json ./
 
 EXPOSE 4200
-CMD ["serve", "-s", "dist", "-l", "4200"]
+CMD ["npm", "start"]
