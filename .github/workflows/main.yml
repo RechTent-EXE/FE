@@ -60,7 +60,6 @@ jobs:
             type=gha
             type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DH_REPO_NAME }}:latest
           cache-to: |
-            type=gha,mode=max
             type=inline
 
   deploy:
