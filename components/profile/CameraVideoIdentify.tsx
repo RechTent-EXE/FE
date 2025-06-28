@@ -2,6 +2,8 @@ import React, { useRef, useState } from "react";
 import * as faceapi from "face-api.js";
 import { UserProfile } from "../../types/user";
 import { Camera, CheckCircle, RefreshCw, X } from "lucide-react";
+import { getAccessToken } from "../../lib/api";
+import api from "../../lib/api";
 
 interface CameraVideoIdentifyProps {
   profile: UserProfile;
@@ -29,23 +31,23 @@ export const CameraVideoIdentify = ({
     null
   );
 
-  // Update verification status via API
   const updateVerificationStatus = async (isVerified: boolean) => {
     try {
-      // Get user ID from token
-      const token = localStorage.getItem("accessToken");
-      if (!token) throw new Error("No access token found");
+      const token = getAccessToken();
+      const userId = profile._id;
 
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const userId = payload.sub;
+      if (!token || !userId) {
+        throw new Error("Authentication required");
+      }
 
-      // Use the same endpoint as other user updates
       const formData = new FormData();
 
-      // Add current profile fields to preserve them
+      // Add profile fields
       formData.append("fullname", profile.fullname || "");
       formData.append("phone", profile.phone || "");
       formData.append("address", profile.address || "");
+
+      // Set verification status
       formData.append("isVerified", isVerified.toString());
 
       // Add image fields as empty strings
@@ -56,17 +58,11 @@ export const CameraVideoIdentify = ({
       formData.append("drivingLicenseBackImageUrl", "");
       formData.append("passportFrontImageUrl", "");
 
-      const response = await fetch(`http://localhost:3000/users/${userId}`, {
-        method: "PUT",
+      await api.put(`/users/${userId}`, formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-        body: formData,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to update verification status");
-      }
     } catch (error) {
       throw error;
     }
