@@ -23,6 +23,7 @@ export const fetchProductTypes = async (): Promise<ProductType[]> => {
 // Fetch brands
 export const fetchBrands = async (): Promise<Brand[]> => {
   try {
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
     const response = await api.get("/brands");
     return response.data;
   } catch {
