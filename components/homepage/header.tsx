@@ -29,6 +29,10 @@ export default function Header() {
   const favouritesCount = favourites.length;
 
   useEffect(() => {
+    console.log("Client-side API URL:", process.env.NEXT_PUBLIC_API_URL); //check if .env.local is loaded
+  }, []);
+
+  useEffect(() => {
     setMounted(true);
   }, []);
 
