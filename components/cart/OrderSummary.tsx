@@ -1,10 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Shield, CreditCard, Truck, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import { Shield, CreditCard, Truck, CheckCircle, Loader2 } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import paymentService from "@/services/paymentService";
+import { OrderData, OrderItem } from "@/types/payment";
 
 interface OrderSummaryProps {
   itemCount: number;
@@ -32,10 +35,14 @@ export default function OrderSummary({
   calculateRentalDays,
 }: OrderSummaryProps) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { profile } = useProfile();
 
-  const proceedToCheckout = () => {
+  // Payment state
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const proceedToPayment = async () => {
     if (hasUnavailableItems) {
       alert(
         "Một số sản phẩm trong giỏ hàng hiện không có sẵn. Vui lòng xóa hoặc thay thế."
@@ -44,7 +51,7 @@ export default function OrderSummary({
     }
 
     // Check if user is authenticated
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       alert("Vui lòng đăng nhập để tiếp tục thanh toán.");
       router.push("/auth/login");
       return;
@@ -61,7 +68,70 @@ export default function OrderSummary({
       return;
     }
 
-    router.push("/checkout");
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Prepare order data
+      const orderItems: OrderItem[] = cartItems.map((item) => ({
+        productId: item.productId,
+        productName:
+          item.name || item.productDetail?.name || `Sản phẩm ${item.productId}`,
+        quantity: item.quantity,
+        singleDayPrice: item.singleDayPrice || 0,
+        actualPrice: item.actualPrice || 0,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        totalPrice:
+          (item.singleDayPrice || 0) *
+          calculateRentalDays(item.startDate, item.endDate) *
+          item.quantity,
+        depositAmount: (item.actualPrice || 0) * 0.3 * item.quantity,
+      }));
+
+      const orderData: OrderData = {
+        userId: user.id,
+        cartItems: orderItems,
+        subtotal,
+        discount,
+        deposit,
+        total,
+        shippingInfo: {
+          fullname: profile.fullname || "",
+          phone: profile.phone || "",
+          address: profile.address || "",
+        },
+        paymentMethod: "credit_card", // Default to credit card
+        paymentType: "final", // Force full payment
+      };
+
+      // Validate order data
+      const validation = paymentService.validatePaymentData(orderData);
+      if (!validation.isValid) {
+        setError(validation.error || "Dữ liệu đơn hàng không hợp lệ");
+        return;
+      }
+
+      // Generate order ID
+      const orderId = paymentService.generateOrderId();
+
+      // Prepare payment data
+      const paymentData = paymentService.preparePaymentData(orderData, orderId);
+
+      // Create payment
+      const paymentResponse = await paymentService.createPayment(paymentData);
+
+      // Redirect to PayOS
+      paymentService.redirectToPayOS(paymentResponse.payosUrl);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Có lỗi xảy ra khi xử lý thanh toán"
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -139,6 +209,22 @@ export default function OrderSummary({
           </div>
         </div>
 
+        {/* Payment Info */}
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <h4 className="font-medium text-blue-900 mb-2">Thanh toán toàn bộ</h4>
+          <p className="text-sm text-blue-800">
+            Bạn sẽ thanh toán {total.toLocaleString()}đ bao gồm tiền thuê và
+            tiền cọc ngay bây giờ.
+          </p>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
+
         {/* Security Info */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
           <div className="flex items-start gap-3">
@@ -155,17 +241,27 @@ export default function OrderSummary({
 
         {/* Checkout Button */}
         <button
-          onClick={proceedToCheckout}
+          onClick={proceedToPayment}
           disabled={
             itemCount === 0 ||
             hasUnavailableItems ||
             !isAuthenticated ||
-            !(profile?.fullname && profile?.phone && profile?.address)
+            !(profile?.fullname && profile?.phone && profile?.address) ||
+            isProcessing
           }
           className="w-full mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-400 text-white py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
         >
-          <CreditCard size={20} />
-          Tiến hành thanh toán
+          {isProcessing ? (
+            <>
+              <Loader2 size={20} className="animate-spin" />
+              Đang xử lý...
+            </>
+          ) : (
+            <>
+              <CreditCard size={20} />
+              Thanh toán {total.toLocaleString()}đ
+            </>
+          )}
         </button>
 
         {/* Shipping Info */}
