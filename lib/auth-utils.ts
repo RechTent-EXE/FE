@@ -5,6 +5,7 @@ export interface JWTPayload {
   email?: string;
   fullname?: string;
   fullName?: string;
+  role?: number;
   exp?: number;
   iat?: number;
   [key: string]: unknown;
@@ -148,5 +149,33 @@ export function getFullNameFromToken(): string | null {
     return fullname;
   } catch {
     return null;
+  }
+}
+
+export function getRoleFromToken(): number | null {
+  try {
+    const token = getAccessToken();
+    if (!token) {
+      return null;
+    }
+
+    const decoded = decodeJWT(token);
+    if (!decoded) {
+      return null;
+    }
+
+    // Return role field from token, default to 1 (user) if not found
+    return decoded.role !== undefined ? decoded.role : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isAdmin(): boolean {
+  try {
+    const role = getRoleFromToken();
+    return role === 0;
+  } catch {
+    return false;
   }
 }

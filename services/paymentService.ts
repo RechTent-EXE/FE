@@ -7,9 +7,6 @@ import {
 } from "../types/payment";
 
 class PaymentService {
-  /**
-   * Tạo link thanh toán PayOS
-   */
   async createPayment(
     paymentData: CreatePaymentRequest
   ): Promise<CreatePaymentResponse> {
@@ -17,7 +14,6 @@ class PaymentService {
       const response = await apiClient.post("/payments", paymentData);
       return response.data;
     } catch (error: unknown) {
-      // Enhanced error handling
       const axiosError = error as {
         response?: {
           data?: { message?: string };
@@ -37,9 +33,6 @@ class PaymentService {
     }
   }
 
-  /**
-   * Lấy thông tin chi tiết thanh toán
-   */
   async getPaymentDetails(paymentId: string): Promise<PaymentDetails> {
     try {
       const response = await apiClient.get(`/payments/${paymentId}`);
@@ -59,14 +52,10 @@ class PaymentService {
     }
   }
 
-  /**
-   * Xử lý dữ liệu từ giỏ hàng để tạo payment request
-   */
   preparePaymentData(
     orderData: OrderData,
     orderId: string
   ): CreatePaymentRequest {
-    // Force full payment (subtotal + deposit)
     const amount = orderData.subtotal + orderData.deposit;
 
     return {
@@ -79,27 +68,18 @@ class PaymentService {
     };
   }
 
-  /**
-   * Tạo orderId unique (shorter for PayOS compatibility)
-   */
   generateOrderId(): string {
     const timestamp = Date.now().toString().slice(-8); // Last 8 digits
     const random = Math.random().toString(36).substring(2, 6); // 4 chars
     return `ORD_${timestamp}_${random}`.toUpperCase();
   }
 
-  /**
-   * Redirect user to PayOS URL
-   */
   redirectToPayOS(payosUrl: string): void {
     if (typeof window !== "undefined") {
       window.location.href = payosUrl;
     }
   }
 
-  /**
-   * Validate payment data before sending
-   */
   validatePaymentData(orderData: OrderData): {
     isValid: boolean;
     error?: string;
@@ -128,12 +108,9 @@ class PaymentService {
       return { isValid: false, error: "Vui lòng chọn phương thức thanh toán" };
     }
 
-    // Payment type is forced to 'final', no need to validate
-
     return { isValid: true };
   }
 }
 
-// Export singleton instance
 const paymentService = new PaymentService();
 export default paymentService;

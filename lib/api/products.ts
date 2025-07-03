@@ -6,6 +6,7 @@ import {
   ProductRating,
   CreateProductRating,
   UserProfile,
+  Product,
 } from "@/types/product";
 import api from "../api";
 import { getUserIdFromToken } from "../auth-utils";
@@ -190,5 +191,110 @@ export const fetchUserProfile = async (): Promise<UserProfile | null> => {
     return response.data;
   } catch {
     return null;
+  }
+};
+
+// ========== ADMIN APIs ==========
+
+// Admin: Create new product
+export const createProduct = async (productData: {
+  name: string;
+  typeId: string;
+  actualPrice: number;
+  brandId: string;
+  description: string;
+  detailDescription: string;
+  techSpec: string;
+  features: string;
+  includes: string;
+  highlights: string;
+  isVerified: boolean;
+  isAvailable: boolean;
+  altText: string;
+  singleDayPrice: number;
+  images: string[];
+}): Promise<Product> => {
+  try {
+    const response = await api.post("/rented-products", productData);
+    return response.data;
+  } catch (error: unknown) {
+    const axiosError = error as {
+      response?: { data?: { message?: string } };
+      message?: string;
+    };
+    const errorMessage =
+      axiosError.response?.data?.message ||
+      axiosError.message ||
+      "Failed to create product";
+    throw new Error(errorMessage);
+  }
+};
+
+// Admin: Update product
+export const updateProduct = async (
+  productId: string,
+  productData: {
+    name: string;
+    typeId: string;
+    actualPrice: number;
+    brandId: string;
+    description: string;
+    detailDescription: string;
+    techSpec: string;
+    features: string;
+    includes: string;
+    highlights: string;
+    isVerified: boolean;
+    isAvailable: boolean;
+    altText: string;
+    singleDayPrice: number;
+    images: string[];
+  }
+): Promise<Product> => {
+  try {
+    const response = await api.patch(
+      `/rented-products/${productId}`,
+      productData
+    );
+    return response.data;
+  } catch (error: unknown) {
+    const axiosError = error as {
+      response?: { data?: { message?: string } };
+      message?: string;
+    };
+    const errorMessage =
+      axiosError.response?.data?.message ||
+      axiosError.message ||
+      "Failed to update product";
+    throw new Error(errorMessage);
+  }
+};
+
+// Admin: Delete product
+export const deleteProduct = async (productId: string): Promise<void> => {
+  try {
+    await api.delete(`/rented-products/${productId}`);
+  } catch (error: unknown) {
+    const axiosError = error as {
+      response?: { data?: { message?: string } };
+      message?: string;
+    };
+    const errorMessage =
+      axiosError.response?.data?.message ||
+      axiosError.message ||
+      "Failed to delete product";
+    throw new Error(errorMessage);
+  }
+};
+
+// Admin: Fetch products by brand
+export const fetchProductsByBrand = async (
+  brandId: string
+): Promise<RentedProduct[]> => {
+  try {
+    const response = await api.get(`/rented-products/GetByBrand/${brandId}`);
+    return response.data;
+  } catch {
+    throw new Error("Failed to fetch products by brand");
   }
 };

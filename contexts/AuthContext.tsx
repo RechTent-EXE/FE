@@ -14,6 +14,7 @@ import {
   clearAccessToken,
   getTokenPayload,
 } from "../lib/auth-utils";
+import userService from "../services/userService";
 
 interface User {
   id: string;
@@ -22,6 +23,7 @@ interface User {
   phone?: string;
   address?: string;
   dateOfBirth?: string;
+  role?: number;
 }
 
 interface RegisterFormData {
@@ -37,10 +39,12 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterFormData) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,6 +77,7 @@ const decodeToken = (token: string): User | null => {
       id: payload.sub || payload.id || payload.userId || "",
       email: payload.email || "",
       fullname: payload.fullname || payload.fullName,
+      role: payload.role,
     };
   } catch {
     clearAccessToken();
@@ -84,7 +89,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userIsAdmin, setUserIsAdmin] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Fetch full user profile from API
+  const refreshUserProfile = async () => {
+    try {
+      if (!user?.id) return;
+
+      const userProfile = await userService.getUserById(user.id);
+      const updatedUser: User = {
+        ...user,
+        fullname: userProfile.fullname,
+        phone: userProfile.phone,
+        address: userProfile.address,
+        dateOfBirth: userProfile.dateOfBirth,
+        role: userProfile.role,
+      };
+
+      setUser(updatedUser);
+      setUserIsAdmin(userProfile.role === 0);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
 
   const checkAuth = async () => {
     // Only check auth on client side to avoid hydration mismatch
@@ -96,11 +124,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       const accessToken = getAccessToken();
+      console.log(
+        "🔍 [DEBUG] Access token:",
+        accessToken ? "exists" : "missing"
+      );
+
       if (accessToken && validateToken()) {
         const decodedUser = decodeToken(accessToken);
+        console.log("🔍 [DEBUG] Decoded user:", decodedUser);
+
         if (decodedUser) {
           setUser(decodedUser);
           setIsAuthenticated(true);
+
+          // Check if role is in token, if not fetch from API
+          if (decodedUser.role !== undefined) {
+            console.log("🔍 [DEBUG] Role from token:", decodedUser.role);
+            setUserIsAdmin(decodedUser.role === 0);
+          } else {
+            console.log("🔍 [DEBUG] Role not in token, fetching from API...");
+            // Fetch full profile to get role
+            try {
+              const userProfile = await userService.getUserById(decodedUser.id);
+              console.log("🔍 [DEBUG] User profile from API:", userProfile);
+              console.log("🔍 [DEBUG] Role from API:", userProfile.role);
+
+              const updatedUser: User = {
+                ...decodedUser,
+                role: userProfile.role,
+              };
+              setUser(updatedUser);
+              setUserIsAdmin(userProfile.role === 0);
+              console.log(
+                "🔍 [DEBUG] Is admin set to:",
+                userProfile.role === 0
+              );
+            } catch (error) {
+              console.error("🔍 [DEBUG] Error fetching user role:", error);
+              setUserIsAdmin(false);
+            }
+          }
         } else {
           // Token is invalid, try to refresh
           const refreshToken = getRefreshToken();
@@ -114,21 +177,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (newDecodedUser) {
                 setUser(newDecodedUser);
                 setIsAuthenticated(true);
+                setUserIsAdmin(newDecodedUser.role === 0);
               }
             } catch {
               clearTokens();
               setUser(null);
               setIsAuthenticated(false);
+              setUserIsAdmin(false);
             }
           }
         }
       } else {
+        console.log("🔍 [DEBUG] No valid token found");
         setUser(null);
         setIsAuthenticated(false);
+        setUserIsAdmin(false);
       }
-    } catch {
+    } catch (error) {
+      console.error("🔍 [DEBUG] Error in checkAuth:", error);
       setUser(null);
       setIsAuthenticated(false);
+      setUserIsAdmin(false);
     } finally {
       setIsLoading(false);
     }
@@ -138,6 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await authAPI.login({ email, password });
+      console.log("🔍 [DEBUG] Login response:", response);
 
       // Store tokens
       setAccessToken(response.access_token);
@@ -145,11 +215,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Decode and set user
       const decodedUser = decodeToken(response.access_token);
+      console.log("🔍 [DEBUG] Decoded user after login:", decodedUser);
+
       if (decodedUser) {
         setUser(decodedUser);
         setIsAuthenticated(true);
+
+        // Fetch full profile to ensure we have role
+        try {
+          const userProfile = await userService.getUserById(decodedUser.id);
+          console.log("🔍 [DEBUG] User profile after login:", userProfile);
+          console.log("🔍 [DEBUG] Role from profile:", userProfile.role);
+
+          const updatedUser: User = {
+            ...decodedUser,
+            role: userProfile.role,
+          };
+          setUser(updatedUser);
+          setUserIsAdmin(userProfile.role === 0);
+          console.log(
+            "🔍 [DEBUG] Admin status set to:",
+            userProfile.role === 0
+          );
+        } catch (error) {
+          console.error(
+            "🔍 [DEBUG] Error fetching user profile after login:",
+            error
+          );
+          setUserIsAdmin(decodedUser.role === 0);
+        }
       }
     } catch (error: unknown) {
+      console.error("🔍 [DEBUG] Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -176,6 +273,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null);
       setIsAuthenticated(false);
+      setUserIsAdmin(false);
       setIsLoading(false);
     }
   };
@@ -194,10 +292,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isLoading,
     isAuthenticated,
+    isAdmin: userIsAdmin,
     login,
     register,
     logout,
     checkAuth,
+    refreshUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

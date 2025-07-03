@@ -47,6 +47,7 @@ export interface CartItem {
 
 export interface Cart {
   _id: string;
+  cartId: string; // UUID field from backend
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -67,8 +68,6 @@ export interface UpdateCartItemData {
   endDate: string;
 }
 
-const CART_ID_KEY = "rechTent_cartId";
-
 export const useCart = () => {
   const { user, isAuthenticated } = useAuth();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -78,27 +77,8 @@ export const useCart = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get cartId from localStorage
-  const getStoredCartId = (): string | null => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(CART_ID_KEY);
-    }
-    return null;
-  };
-
-  // Store cartId in localStorage
-  const storeCartId = (id: string) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(CART_ID_KEY, id);
-    }
-    setCartId(id);
-  };
-
-  // Clear cartId from localStorage
-  const clearStoredCartId = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(CART_ID_KEY);
-    }
+  // Clear cartId from memory
+  const clearCartId = () => {
     setCartId(null);
   };
 
@@ -123,10 +103,6 @@ export const useCart = () => {
   // Initialize cart on mount
   useEffect(() => {
     const initializeCart = async () => {
-      const storedCartId = getStoredCartId();
-      if (storedCartId) {
-        setCartId(storedCartId);
-      }
       await fetchCartItems();
     };
 
@@ -134,28 +110,42 @@ export const useCart = () => {
       initializeCart();
     } else {
       setIsLoading(false);
+      clearCartId(); // Clear cart when user logs out
     }
   }, [isAuthenticated, user?.id]);
 
   // Get or create cart
+  // Reusable function to get or create cart (memory-based, no localStorage)
   const getOrCreateCart = async (): Promise<string | null> => {
     if (!user?.id || !isAuthenticated) {
       throw new Error("Vui lòng đăng nhập để sử dụng giỏ hàng");
     }
 
     try {
-      // Case A: cartId already exists in localStorage
-      const storedCartId = getStoredCartId();
-      if (storedCartId) {
-        return storedCartId;
+      // Step 0: If we already have a cartId in memory, validate it first
+      if (cartId) {
+        try {
+          await api.get(`/carts/${cartId}`);
+          return cartId;
+        } catch (error: unknown) {
+          // Cart doesn't exist on backend, clear memory
+          const errorResponse = (error as { response?: { status?: number } })
+            ?.response;
+          if (errorResponse?.status === 404) {
+            clearCartId();
+          } else {
+            clearCartId();
+          }
+          // Continue to check user carts or create new one
+        }
       }
 
-      // Try to get existing cart for user
+      // Step 1: GET /carts/user/{userId} - Check if user has existing cart
       const cartsResponse = await api.get(`/carts/user/${user.id}`);
-      const carts: Cart[] = cartsResponse.data || [];
 
-      if (carts.length > 0) {
-        // Find active cart or most recent one
+      if (cartsResponse.data && cartsResponse.data.length > 0) {
+        // User has existing cart(s), get the most recent active one
+        const carts: Cart[] = cartsResponse.data;
         const activeCart =
           carts.find((cart) => cart.status === "active") ||
           carts.sort(
@@ -163,20 +153,24 @@ export const useCart = () => {
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )[0];
 
-        storeCartId(activeCart._id);
-        return activeCart._id;
+        setCartId(activeCart.cartId);
+        return activeCart.cartId;
       } else {
-        // No cart exists, create new one
+        // Step 2: No cart exists, create new one using POST /carts
         const newCartResponse = await api.post("/carts", {
           userId: user.id,
         });
-        const newCartId = newCartResponse.data._id || newCartResponse.data.id;
 
-        storeCartId(newCartId);
+        const newCartId =
+          newCartResponse.data.cartId ||
+          newCartResponse.data._id ||
+          newCartResponse.data.id;
+        setCartId(newCartId);
         return newCartId;
       }
     } catch (error) {
-      console.error("Error getting/creating cart:", error);
+      // Clear cart ID from memory if there's an error
+      clearCartId();
       throw error;
     }
   };
@@ -192,7 +186,8 @@ export const useCart = () => {
       setIsLoading(true);
       setError(null);
 
-      const currentCartId = cartId || getStoredCartId();
+      // Use new flow to get or create cart
+      const currentCartId = await getOrCreateCart();
       if (!currentCartId) {
         setCartItems([]);
         setIsLoading(false);
@@ -200,9 +195,40 @@ export const useCart = () => {
       }
 
       // Get cart items
-      const cartItemsResponse = await api.get(
-        `/cart-items/SearchByCart/${currentCartId}`
-      );
+      let cartItemsResponse;
+      try {
+        cartItemsResponse = await api.get(
+          `/cart-items/SearchByCart/${currentCartId}`
+        );
+      } catch (error: unknown) {
+        // If cart doesn't exist, use the new flow to get/create cart again
+        const errorResponse = (error as { response?: { status?: number } })
+          ?.response;
+        if (errorResponse?.status === 404) {
+          clearCartId();
+          const newCartId = await getOrCreateCart();
+          if (newCartId) {
+            // Try fetching items from the new cart
+            try {
+              cartItemsResponse = await api.get(
+                `/cart-items/SearchByCart/${newCartId}`
+              );
+            } catch {
+              // New cart is empty, return empty items
+              setCartItems([]);
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            setCartItems([]);
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          throw error;
+        }
+      }
+
       const rawCartItems: CartItem[] = cartItemsResponse.data || [];
 
       if (rawCartItems.length === 0) {
@@ -240,7 +266,6 @@ export const useCart = () => {
       );
       setCartItems(detailedCartItems);
     } catch (error: unknown) {
-      console.error("❌ [useCart] Error fetching cart items:", error);
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -267,12 +292,38 @@ export const useCart = () => {
       }
 
       // Check if product already exists in cart
-      const existingItems = await api.get(
-        `/cart-items/SearchByCart/${currentCartId}`
-      );
-      const existingItem = existingItems.data?.find(
-        (item: CartItem) => item.productId === data.productId
-      );
+      let existingItem = null;
+      try {
+        const existingItems = await api.get(
+          `/cart-items/SearchByCart/${currentCartId}`
+        );
+        existingItem = existingItems.data?.find(
+          (item: CartItem) => item.productId === data.productId
+        );
+      } catch (error: unknown) {
+        // If cart doesn't exist, get/create cart again with new flow
+        const errorResponse = (error as { response?: { status?: number } })
+          ?.response;
+        if (errorResponse?.status === 404) {
+          clearCartId();
+          const newCartId = await getOrCreateCart();
+          if (!newCartId) {
+            throw new Error("Không thể tạo giỏ hàng mới");
+          }
+          // Use the new cart ID and continue with adding new item
+          await api.post("/cart-items", {
+            cartId: newCartId,
+            productId: data.productId,
+            quantity: data.quantity,
+            startDate: data.startDate,
+            endDate: data.endDate,
+          });
+          await fetchCartItems();
+          return true;
+        } else {
+          throw error;
+        }
+      }
 
       if (existingItem) {
         // Update existing item - increase quantity instead of replacing
@@ -402,7 +453,7 @@ export const useCart = () => {
 
   // Clear entire cart
   const clearCart = () => {
-    clearStoredCartId();
+    clearCartId();
     setCartItems([]);
   };
 

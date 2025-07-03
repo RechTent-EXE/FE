@@ -132,3 +132,41 @@ export interface DiscountInfo {
   finalPrice: number;
   totalPayment: number; // finalPrice + deposit
 }
+
+// ========== ADMIN TYPES ==========
+
+// Admin: Product form data
+export interface CreateProductData {
+  name: string;
+  typeId: string;
+  actualPrice: number;
+  brandId: string;
+  description: string;
+  detailDescription: string;
+  techSpec: string;
+  features: string;
+  includes: string;
+  highlights: string;
+  isVerified: boolean;
+  isAvailable: boolean;
+  altText: string;
+  singleDayPrice: number;
+  images: string[];
+}
+
+// Admin: Product update data
+export type UpdateProductData = CreateProductData;
+
+// Admin: Product table row data
+export interface AdminProductRow {
+  id: string;
+  name: string;
+  type: string;
+  brand: string;
+  singleDayPrice: number;
+  actualPrice: number;
+  isVerified: boolean;
+  isAvailable: boolean;
+  image: string;
+  createdAt?: string;
+}
