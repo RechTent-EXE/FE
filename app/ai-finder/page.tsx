@@ -19,7 +19,7 @@ export default function AIFinderPage() {
       const res = await api.post("/ai/recommend", { query });
 
       const products = res.data;
-      setSuggestions(products);
+      setSuggestions(products.filter((product: any) => product.match > 0)); //match = 0 thì cút
     } catch (err) {
       console.error("Recommendation failed:", err);
       alert("Đã xảy ra lỗi khi tìm kiếm. Vui lòng thử lại.");
