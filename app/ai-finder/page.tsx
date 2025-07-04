@@ -127,6 +127,11 @@ export default function AIFinderPage() {
                           <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
                             {product.category}
                           </span>
+                          {product.isVerified && (
+                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm font-medium">
+                              Đã xác minh
+                            </span>
+                          )}
                         </div>
 
                         <p className="text-gray-600 mb-3">
