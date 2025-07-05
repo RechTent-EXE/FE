@@ -172,43 +172,67 @@ export default function HeroSection() {
           <div className="relative animate-slide-up">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-6">
-                <div className="group bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-8 transform rotate-3 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Camera className="w-10 h-10 text-white" />
+                <Link href="/products/camera">
+                  <div className="group bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-8 transform rotate-3 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Camera className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Camera
+                    </h3>
+                    <p className="text-white/90 text-sm">Chuyên nghiệp</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      50+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Camera</h3>
-                  <p className="text-white/90 text-sm">Chuyên nghiệp</p>
-                  <div className="mt-4 text-white/80 text-xs">50+ sản phẩm</div>
-                </div>
+                </Link>
 
-                <div className="group bg-gradient-to-br from-green-400 to-blue-500 rounded-3xl p-8 transform -rotate-2 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Video className="w-10 h-10 text-white" />
+                <Link href="/products/flycam">
+                  <div className="group bg-gradient-to-br from-green-400 to-blue-500 rounded-3xl p-8 transform -rotate-2 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Video className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Flycam
+                    </h3>
+                    <p className="text-white/90 text-sm">4K Ultra HD</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      25+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Flycam</h3>
-                  <p className="text-white/90 text-sm">4K Ultra HD</p>
-                  <div className="mt-4 text-white/80 text-xs">25+ sản phẩm</div>
-                </div>
+                </Link>
               </div>
 
               <div className="space-y-6 pt-12">
-                <div className="group bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl p-8 transform rotate-2 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Laptop className="w-10 h-10 text-white" />
+                <Link href="/products/laptop">
+                  <div className="group bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl p-8 transform rotate-2 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Laptop className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Laptop
+                    </h3>
+                    <p className="text-white/90 text-sm">Hiệu năng cao</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      30+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Laptop</h3>
-                  <p className="text-white/90 text-sm">Hiệu năng cao</p>
-                  <div className="mt-4 text-white/80 text-xs">30+ sản phẩm</div>
-                </div>
+                </Link>
 
-                <div className="group bg-gradient-to-br from-red-400 to-yellow-500 rounded-3xl p-8 transform -rotate-3 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Smartphone className="w-10 h-10 text-white" />
+                <Link href="/products/dashcam">
+                  <div className="group bg-gradient-to-br from-red-400 to-yellow-500 rounded-3xl p-8 transform -rotate-3 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Smartphone className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Dashcam
+                    </h3>
+                    <p className="text-white/90 text-sm">An toàn lái xe</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      40+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Dashcam</h3>
-                  <p className="text-white/90 text-sm">An toàn lái xe</p>
-                  <div className="mt-4 text-white/80 text-xs">40+ sản phẩm</div>
-                </div>
+                </Link>
               </div>
             </div>
           </div>
