@@ -45,6 +45,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (token: string, newPassword: string) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -278,6 +280,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email: string): Promise<string> => {
+    try {
+      setIsLoading(true);
+      const response = await authAPI.forgotPassword(email);
+      return response.message || "Vui lòng kiểm tra email của bạn";
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Yêu cầu thất bại");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetPassword = async (
+    token: string,
+    newPassword: string
+  ): Promise<string> => {
+    try {
+      setIsLoading(true);
+      const response = await authAPI.resetPassword(token, newPassword);
+      return response.message || "Đặt lại mật khẩu thành công";
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Đặt lại mật khẩu thất bại"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -298,6 +329,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     checkAuth,
     refreshUserProfile,
+    forgotPassword,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
