@@ -4,6 +4,8 @@ import {
   CreatePaymentResponse,
   PaymentDetails,
   OrderData,
+  CreateOrderRequest,
+  CreateOrderResponse,
 } from "../types/payment";
 
 class PaymentService {
@@ -11,6 +13,21 @@ class PaymentService {
     paymentData: CreatePaymentRequest
   ): Promise<CreatePaymentResponse> {
     try {
+      // Validate payment data before sending
+      console.log("Creating payment with data:", paymentData);
+
+      if (!paymentData.orderId) {
+        throw new Error("Mã đơn hàng (orderId) không được cung cấp");
+      }
+
+      if (!paymentData.userId) {
+        throw new Error("ID người dùng (userId) không được cung cấp");
+      }
+
+      if (!paymentData.amount || paymentData.amount <= 0) {
+        throw new Error("Số tiền thanh toán không hợp lệ");
+      }
+
       const response = await apiClient.post("/payments", paymentData);
       return response.data;
     } catch (error: unknown) {
@@ -54,18 +71,36 @@ class PaymentService {
 
   preparePaymentData(
     orderData: OrderData,
-    orderId: string
+    orderId: string,
+    orderTotal?: number // Use order total from backend if provided
   ): CreatePaymentRequest {
-    const amount = orderData.subtotal + orderData.deposit;
+    console.log("Preparing payment data with orderId:", orderId);
+    console.log("Order total from backend:", orderTotal);
+    console.log("Frontend calculated total:", orderData.total);
 
-    return {
+    if (!orderId) {
+      throw new Error("orderId is required to prepare payment data");
+    }
+
+    // Use order total from backend if available, otherwise use frontend calculation
+    const amount = orderTotal || orderData.total;
+
+    console.log("Final amount for payment:", amount);
+
+    const paymentData = {
       userId: orderData.userId,
       orderId: orderId,
       amount: amount,
       paymentMethod: orderData.paymentMethod,
-      paymentType: "final", // Force full payment
+      paymentType: "final" as const, // Force full payment
       paidAt: new Date().toISOString(),
+      // Add callback URLs if needed
+      returnUrl: `${window.location.origin}/payment/success`,
+      cancelUrl: `${window.location.origin}/payment/cancel`,
     };
+
+    console.log("Payment data prepared:", paymentData);
+    return paymentData;
   }
 
   generateOrderId(): string {
@@ -77,6 +112,109 @@ class PaymentService {
   redirectToPayOS(payosUrl: string): void {
     if (typeof window !== "undefined") {
       window.location.href = payosUrl;
+    }
+  }
+
+  async createOrder(
+    orderData: CreateOrderRequest
+  ): Promise<CreateOrderResponse> {
+    try {
+      console.log("Creating order with request data:", orderData);
+      const response = await apiClient.post("/orders/from-cart", orderData);
+      console.log("Order API response:", response.data);
+
+      // Validate response structure
+      if (!response.data) {
+        throw new Error("Không nhận được phản hồi từ server");
+      }
+
+      // Check if orderId is in the nested order object
+      const orderId = response.data.orderId || response.data.order?.orderId;
+
+      if (!orderId) {
+        console.error("Order response missing orderId:", response.data);
+        throw new Error("Server không trả về mã đơn hàng (orderId)");
+      }
+
+      // Return normalized structure with orderId at top level
+      return {
+        ...response.data,
+        orderId: orderId,
+        // If response has nested order, flatten some important fields
+        ...(response.data.order && {
+          _id: response.data.order._id,
+          userId: response.data.order.userId,
+          cartId: response.data.order.cartId,
+          total: response.data.order.total,
+          status: response.data.order.status,
+          createdAt: response.data.order.createdAt,
+          __v: response.data.order.__v,
+        }),
+      };
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: {
+          data?: { message?: string };
+          status?: number;
+          statusText?: string;
+        };
+        message?: string;
+        request?: unknown;
+      };
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Không thể tạo đơn hàng. Vui lòng thử lại.";
+
+      throw new Error(errorMessage);
+    }
+  }
+
+  async clearCartItems(cartId: string): Promise<void> {
+    try {
+      await apiClient.delete(`/cart-items/DeleteAllByCart/${cartId}`);
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Không thể xóa giỏ hàng.";
+
+      throw new Error(errorMessage);
+    }
+  }
+
+  async confirmPayment(
+    orderCode: string
+  ): Promise<{ success: boolean; message?: string; data?: unknown }> {
+    try {
+      console.log("Confirming payment with orderCode:", orderCode);
+      const response = await apiClient.post(`/payments/confirm/${orderCode}`);
+      console.log("Payment confirmation response:", response.data);
+      return response.data;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: {
+          data?: { message?: string };
+          status?: number;
+          statusText?: string;
+        };
+        message?: string;
+        request?: unknown;
+      };
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Không thể xác nhận trạng thái thanh toán.";
+
+      console.error("Payment confirmation error:", errorMessage);
+      throw new Error(errorMessage);
     }
   }
 

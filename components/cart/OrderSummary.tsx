@@ -18,6 +18,7 @@ interface OrderSummaryProps {
   total: number;
   hasUnavailableItems: boolean;
   cartItems: CartItem[]; // For detailed breakdown
+  cartId: string | null; // Cart ID for order creation
   calculateItemTotal: (item: CartItem) => number;
   calculateRentalDays: (startDate: string, endDate: string) => number;
 }
@@ -31,6 +32,7 @@ export default function OrderSummary({
   total,
   hasUnavailableItems,
   cartItems,
+  cartId,
   calculateItemTotal,
   calculateRentalDays,
 }: OrderSummaryProps) {
@@ -57,6 +59,12 @@ export default function OrderSummary({
       return;
     }
 
+    // Check if cartId is available
+    if (!cartId) {
+      alert("Không tìm thấy giỏ hàng. Vui lòng thử lại.");
+      return;
+    }
+
     // Check if shipping information is complete
     const hasCompleteInfo =
       profile?.fullname && profile?.phone && profile?.address;
@@ -72,7 +80,22 @@ export default function OrderSummary({
     setError(null);
 
     try {
-      // Prepare order data
+      // Step 1: Create order from cart
+      console.log("Creating order with userId:", user.id, "cartId:", cartId);
+      const orderResponse = await paymentService.createOrder({
+        userId: user.id,
+        cartId: cartId,
+      });
+
+      console.log("Order created successfully:", orderResponse);
+      console.log("Order ID from response:", orderResponse.orderId);
+
+      // Validate orderId exists
+      if (!orderResponse.orderId) {
+        throw new Error("Không nhận được mã đơn hàng từ server");
+      }
+
+      // Prepare order data for payment
       const orderItems: OrderItem[] = cartItems.map((item) => ({
         productId: item.productId,
         productName:
@@ -112,14 +135,28 @@ export default function OrderSummary({
         return;
       }
 
-      // Generate order ID
-      const orderId = paymentService.generateOrderId();
+      // Use the order ID from backend response
+      const orderId = orderResponse.orderId;
+      console.log("Using orderId for payment:", orderId);
 
-      // Prepare payment data
-      const paymentData = paymentService.preparePaymentData(orderData, orderId);
+      // Prepare payment data with order total from backend
+      const paymentData = paymentService.preparePaymentData(
+        orderData,
+        orderId,
+        orderResponse.total
+      );
+      console.log("Payment data prepared:", paymentData);
 
       // Create payment
       const paymentResponse = await paymentService.createPayment(paymentData);
+      console.log("Payment created successfully:", paymentResponse);
+
+      // Store cartId in localStorage temporarily for success callback
+      // Will be cleared only if payment is successful
+      if (typeof window !== "undefined") {
+        localStorage.setItem("pendingCartId", cartId);
+        console.log("Stored cartId for potential clearing:", cartId);
+      }
 
       // Redirect to PayOS
       paymentService.redirectToPayOS(paymentResponse.payosUrl);

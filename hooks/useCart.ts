@@ -457,6 +457,11 @@ export const useCart = () => {
     setCartItems([]);
   };
 
+  // Reload cart after payment success
+  const reloadCart = async () => {
+    await fetchCartItems();
+  };
+
   // Get cart count
   const getCartCount = (): number => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -523,6 +528,7 @@ export const useCart = () => {
     updateDates,
     fetchCartItems,
     clearCart,
+    reloadCart,
 
     // Utilities
     getCartCount,

@@ -1,176 +1,215 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import {
-  XCircle,
-  ArrowLeft,
-  Home,
-  ShoppingCart,
-  RefreshCw,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { XCircle, ArrowLeft, ShoppingCart } from "lucide-react";
+import Link from "next/link";
+import paymentService from "@/services/paymentService";
+
+interface PaymentInfo {
+  code?: string;
+  id?: string;
+  cancel?: string;
+  status?: string;
+  orderCode?: string;
+  amount?: string;
+  description?: string;
+  accountNumber?: string;
+  reference?: string;
+  transactionDateTime?: string;
+  currency?: string;
+  paymentLinkId?: string;
+}
 
 export default function PaymentCancelPage() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<{
+    success?: boolean;
+    error?: string;
+    message?: string;
+  } | null>(null);
 
-  const handleGoHome = () => {
-    router.push("/");
+  useEffect(() => {
+    // Log all PayOS callback parameters
+    const allParams: Record<string, string> = {};
+    searchParams.forEach((value, key) => {
+      allParams[key] = value;
+    });
+
+    console.log("PayOS Cancel Callback - All Parameters:", allParams);
+
+    // Extract common PayOS return parameters
+    const payosData: PaymentInfo = {
+      code: searchParams.get("code") || undefined,
+      id: searchParams.get("id") || undefined,
+      cancel: searchParams.get("cancel") || undefined,
+      status: searchParams.get("status") || undefined,
+      orderCode: searchParams.get("orderCode") || undefined,
+      amount: searchParams.get("amount") || undefined,
+      description: searchParams.get("description") || undefined,
+      accountNumber: searchParams.get("accountNumber") || undefined,
+      reference: searchParams.get("reference") || undefined,
+      transactionDateTime: searchParams.get("transactionDateTime") || undefined,
+      currency: searchParams.get("currency") || undefined,
+      paymentLinkId: searchParams.get("paymentLinkId") || undefined,
+    };
+
+    console.log("PayOS Cancel Data:", payosData);
+    setPaymentInfo(payosData);
+
+    // Also log the raw query string for debugging
+    console.log("PayOS Cancel - Raw Query String:", window.location.search);
+
+    // Confirm payment status (cancel) if orderCode is available
+    if (payosData.orderCode) {
+      confirmPaymentStatus(payosData.orderCode);
+    }
+
+    // Clean up pending cart since payment was cancelled
+    cleanupPendingCart();
+  }, [searchParams]);
+
+  const confirmPaymentStatus = async (orderCode: string) => {
+    setIsConfirming(true);
+    try {
+      console.log("Confirming payment cancellation for orderCode:", orderCode);
+      const result = await paymentService.confirmPayment(orderCode);
+      setConfirmationResult(result);
+      console.log("Payment cancellation confirmation successful:", result);
+    } catch (error) {
+      console.error("Failed to confirm payment cancellation:", error);
+      setConfirmationResult({
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
-  const handleGoToCart = () => {
-    router.push("/cart");
-  };
-
-  const handleTryAgain = () => {
-    router.push("/checkout");
+  const cleanupPendingCart = () => {
+    // Remove pendingCartId from localStorage since payment was cancelled
+    // We don't want to clear cart items in this case
+    const pendingCartId = localStorage.getItem("pendingCartId");
+    if (pendingCartId) {
+      localStorage.removeItem("pendingCartId");
+      console.log(
+        "Removed pendingCartId from localStorage due to payment cancellation:",
+        pendingCartId
+      );
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 pt-20 pb-16">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Cancel Header */}
-          <div className="text-center bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
-            <XCircle size={80} className="text-red-500 mx-auto mb-6" />
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-xl border border-red-200 p-8 text-center">
+          {/* Cancel Icon */}
+          <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
+            <XCircle className="w-8 h-8 text-red-600" />
+          </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Thanh toán bị hủy
-            </h1>
+          {/* Cancel Message */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Thanh toán bị hủy
+          </h1>
 
-            <p className="text-gray-600 mb-6">
-              Bạn đã hủy quá trình thanh toán. Đơn hàng của bạn vẫn được giữ
-              trong giỏ hàng.
-            </p>
+          <p className="text-gray-600 mb-6">
+            Giao dịch thanh toán đã bị hủy. Bạn có thể quay lại giỏ hàng để thử
+            lại.
+          </p>
 
-            {/* Information Box */}
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-left mb-6">
-              <h3 className="font-bold text-red-900 mb-3">
-                Tại sao thanh toán bị hủy?
+          {/* Confirmation Status */}
+          {isConfirming && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+              <p className="text-blue-800 text-sm">
+                Đang xác nhận trạng thái hủy thanh toán...
+              </p>
+            </div>
+          )}
+
+          {confirmationResult && (
+            <div
+              className={`border rounded-xl p-4 mb-6 ${
+                confirmationResult.error
+                  ? "bg-red-50 border-red-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}
+            >
+              <h3 className="font-medium text-gray-900 mb-2">
+                Kết quả xác nhận:
               </h3>
-              <ul className="space-y-2 text-sm text-red-800">
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 bg-red-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <span>
-                    Bạn đã nhấn nút &quot;Hủy&quot; hoặc &quot;Quay lại&quot;
-                    trên trang thanh toán
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 bg-red-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <span>Đóng tab trình duyệt trong quá trình thanh toán</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 bg-red-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <span>Thời gian thanh toán bị hết hạn</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 bg-red-400 rounded-full flex-shrink-0 mt-1.5"></span>
-                  <span>Có lỗi kỹ thuật từ cổng thanh toán</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-4">
-              {/* Primary Action */}
-              <button
-                onClick={handleTryAgain}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2"
+              <p
+                className={`text-sm ${
+                  confirmationResult.error ? "text-red-800" : "text-yellow-800"
+                }`}
               >
-                <RefreshCw size={20} />
-                Thử thanh toán lại
-              </button>
+                {confirmationResult.error ||
+                  confirmationResult.message ||
+                  "Hủy thanh toán đã được xác nhận!"}
+              </p>
+            </div>
+          )}
 
-              {/* Secondary Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={handleGoToCart}
-                  className="bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  <ShoppingCart size={20} />
-                  Quay về giỏ hàng
-                </button>
-                <button
-                  onClick={handleGoHome}
-                  className="bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Home size={20} />
-                  Về trang chủ
-                </button>
+          {/* Payment Details */}
+          {paymentInfo && (
+            <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
+              <h3 className="font-medium text-gray-900 mb-3">
+                Thông tin giao dịch:
+              </h3>
+              <div className="space-y-2 text-sm">
+                {paymentInfo.orderCode && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Mã đơn hàng:</span>
+                    <span className="font-medium">{paymentInfo.orderCode}</span>
+                  </div>
+                )}
+                {paymentInfo.amount && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Số tiền:</span>
+                    <span className="font-medium text-red-600">
+                      {parseInt(paymentInfo.amount).toLocaleString()}đ
+                    </span>
+                  </div>
+                )}
+                {paymentInfo.transactionDateTime && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Thời gian:</span>
+                    <span className="font-medium">
+                      {paymentInfo.transactionDateTime}
+                    </span>
+                  </div>
+                )}
+                {paymentInfo.cancel && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Lý do hủy:</span>
+                    <span className="font-medium text-red-600">
+                      {paymentInfo.cancel}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Help Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
-            <h3 className="font-bold text-gray-900 mb-4">Cần hỗ trợ?</h3>
-            <div className="space-y-3 text-sm text-gray-700">
-              <div className="flex items-start gap-3">
-                <ArrowLeft
-                  size={20}
-                  className="text-blue-600 flex-shrink-0 mt-0.5"
-                />
-                <div>
-                  <p className="font-medium">Liên hệ hỗ trợ khách hàng</p>
-                  <p>
-                    Hotline: <span className="font-medium">1900-1234</span>{" "}
-                    (8:00 - 22:00)
-                  </p>
-                  <p>
-                    Email:{" "}
-                    <span className="font-medium">support@rechtent.com</span>
-                  </p>
-                </div>
-              </div>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <Link
+              href="/cart"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <ShoppingCart size={20} />
+              Quay lại giỏ hàng
+            </Link>
 
-              <div className="flex items-start gap-3">
-                <ArrowLeft
-                  size={20}
-                  className="text-blue-600 flex-shrink-0 mt-0.5"
-                />
-                <div>
-                  <p className="font-medium">Phương thức thanh toán khác</p>
-                  <p>
-                    Hỗ trợ: Thẻ tín dụng, Chuyển khoản ngân hàng, Ví điện tử
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <ArrowLeft
-                  size={20}
-                  className="text-blue-600 flex-shrink-0 mt-0.5"
-                />
-                <div>
-                  <p className="font-medium">Kiểm tra kết nối mạng</p>
-                  <p>Đảm bảo kết nối internet ổn định khi thanh toán</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tips Section */}
-          <div className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
-            <h3 className="font-bold text-gray-900 mb-4">
-              💡 Mẹo thanh toán thành công
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-              <div className="space-y-2">
-                <p className="font-medium">Chuẩn bị trước:</p>
-                <ul className="space-y-1 ml-4">
-                  <li>• Thông tin thẻ ngân hàng</li>
-                  <li>• Mã OTP từ ngân hàng</li>
-                  <li>• Kết nối mạng ổn định</li>
-                </ul>
-              </div>
-              <div className="space-y-2">
-                <p className="font-medium">Trong quá trình thanh toán:</p>
-                <ul className="space-y-1 ml-4">
-                  <li>• Không đóng tab trình duyệt</li>
-                  <li>• Không nhấn nút back</li>
-                  <li>• Hoàn thành trong 15 phút</li>
-                </ul>
-              </div>
-            </div>
+            <Link
+              href="/"
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <ArrowLeft size={16} />
+              Về trang chủ
+            </Link>
           </div>
         </div>
       </div>

@@ -7,6 +7,8 @@ export interface CreatePaymentRequest {
   paymentMethod: string;
   paymentType: "deposit" | "final";
   paidAt: string; // ISO string format for backend
+  returnUrl?: string; // Success callback URL
+  cancelUrl?: string; // Cancel callback URL
 }
 
 export interface PaymentItem {
@@ -88,4 +90,40 @@ export interface PaymentFormData {
   paymentMethod: "credit_card" | "bank_transfer" | "e_wallet";
   paymentType: "deposit" | "final";
   agreeToTerms: boolean;
+}
+
+// Order creation types
+export interface CreateOrderRequest {
+  userId: string;
+  cartId: string;
+}
+
+export interface CreateOrderResponse {
+  _id: string;
+  orderId: string;
+  userId: string;
+  cartId: string;
+  total: number;
+  status: string;
+  createdAt: string;
+  __v: number;
+  // Additional fields from backend response
+  order?: {
+    _id: string;
+    orderId: string;
+    userId: string;
+    cartId: string;
+    total: number;
+    status: string;
+    createdAt: string;
+    __v: number;
+  };
+  orderDetails?: Array<{
+    productId: string;
+    quantity: number;
+    price: number;
+    startDate: string;
+    endDate: string;
+  }>;
+  totalAmount?: number;
 }

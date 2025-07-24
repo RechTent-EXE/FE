@@ -17,6 +17,7 @@ export default function CartPage() {
   // Hooks
   const {
     cartItems,
+    cartId,
     isLoading,
     error,
     updateQuantity,
@@ -29,6 +30,9 @@ export default function CartPage() {
     getBrandName,
     getCartCount,
   } = useCart();
+
+  // Debug: Log cartId to console
+  console.log("Cart ID:", cartId);
 
   // Calculate totals
   const subtotal = calculateSubtotal();
@@ -170,6 +174,7 @@ export default function CartPage() {
                   total={total}
                   hasUnavailableItems={hasUnavailableItems}
                   cartItems={cartItems}
+                  cartId={cartId}
                   calculateItemTotal={calculateItemTotal}
                   calculateRentalDays={calculateRentalDays}
                 />
