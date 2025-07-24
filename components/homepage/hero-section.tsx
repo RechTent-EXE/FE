@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Play,
@@ -9,8 +11,13 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
+import { useState } from "react";
 
 export default function HeroSection() {
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const handleToggle = () => setShowDropdown(!showDropdown);
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       {/* Animated Background */}
@@ -66,15 +73,66 @@ export default function HeroSection() {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button className="group relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+            <div className="relative flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handleToggle}
+                className="group relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              >
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative flex items-center justify-center gap-3">
-                  <Play className="w-6 h-6" />
+                  <Play
+                    className={`w-6 h-6 transition-transform duration-300 ${
+                      showDropdown ? "rotate-90" : ""
+                    }`}
+                  />
                   Thuê ngay
                   <TrendingUp className="w-5 h-5" />
+                  {/* <TrendingUp
+                    className={`w-5 h-5 transition-transform duration-300 ${
+                      showDropdown ? "rotate-180" : ""
+                    }`}
+                  /> */}
                 </div>
               </button>
+
+              {showDropdown && (
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in-up">
+                  <div className="grid grid-cols-2 gap-2 p-2">
+                    <Link
+                      href="/products/laptop"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-100 hover:to-purple-100 transition-all duration-300 hover:scale-105 text-gray-700 font-semibold"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Laptop className="w-5 h-5 text-blue-500" />
+                      Laptop
+                    </Link>
+                    <Link
+                      href="/products/dashcam"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-pink-100 hover:to-yellow-100 transition-all duration-300 hover:scale-105 text-gray-700 font-semibold"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Smartphone className="w-5 h-5 text-yellow-500" />
+                      Dashcam
+                    </Link>
+                    <Link
+                      href="/products/camera"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 transition-all duration-300 hover:scale-105 text-gray-700 font-semibold"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Camera className="w-5 h-5 text-purple-500" />
+                      Camera
+                    </Link>
+                    <Link
+                      href="/products/flycam"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 transition-all duration-300 hover:scale-105 text-gray-700 font-semibold"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Video className="w-5 h-5 text-green-500" />
+                      Flycam
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               <Link href="/ai-finder">
                 <button className="group relative border-2 border-gray-300 hover:border-purple-400 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-purple-600 text-lg px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl">
@@ -114,43 +172,67 @@ export default function HeroSection() {
           <div className="relative animate-slide-up">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-6">
-                <div className="group bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-8 transform rotate-3 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Camera className="w-10 h-10 text-white" />
+                <Link href="/products/camera">
+                  <div className="group bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-8 transform rotate-3 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Camera className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Camera
+                    </h3>
+                    <p className="text-white/90 text-sm">Chuyên nghiệp</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      50+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Camera</h3>
-                  <p className="text-white/90 text-sm">Chuyên nghiệp</p>
-                  <div className="mt-4 text-white/80 text-xs">50+ sản phẩm</div>
-                </div>
+                </Link>
 
-                <div className="group bg-gradient-to-br from-green-400 to-blue-500 rounded-3xl p-8 transform -rotate-2 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Video className="w-10 h-10 text-white" />
+                <Link href="/products/flycam">
+                  <div className="group bg-gradient-to-br from-green-400 to-blue-500 rounded-3xl p-8 transform -rotate-2 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Video className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Flycam
+                    </h3>
+                    <p className="text-white/90 text-sm">4K Ultra HD</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      25+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Flycam</h3>
-                  <p className="text-white/90 text-sm">4K Ultra HD</p>
-                  <div className="mt-4 text-white/80 text-xs">25+ sản phẩm</div>
-                </div>
+                </Link>
               </div>
 
               <div className="space-y-6 pt-12">
-                <div className="group bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl p-8 transform rotate-2 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Laptop className="w-10 h-10 text-white" />
+                <Link href="/products/laptop">
+                  <div className="group bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl p-8 transform rotate-2 hover:rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Laptop className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Laptop
+                    </h3>
+                    <p className="text-white/90 text-sm">Hiệu năng cao</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      30+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Laptop</h3>
-                  <p className="text-white/90 text-sm">Hiệu năng cao</p>
-                  <div className="mt-4 text-white/80 text-xs">30+ sản phẩm</div>
-                </div>
+                </Link>
 
-                <div className="group bg-gradient-to-br from-red-400 to-yellow-500 rounded-3xl p-8 transform -rotate-3 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Smartphone className="w-10 h-10 text-white" />
+                <Link href="/products/dashcam">
+                  <div className="group bg-gradient-to-br from-red-400 to-yellow-500 rounded-3xl p-8 transform -rotate-3 hover:-rotate-6 transition-all duration-300 hover:scale-105 cursor-pointer shadow-2xl">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Smartphone className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-2">
+                      Dashcam
+                    </h3>
+                    <p className="text-white/90 text-sm">An toàn lái xe</p>
+                    <div className="mt-4 text-white/80 text-xs">
+                      40+ sản phẩm
+                    </div>
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-2">Dashcam</h3>
-                  <p className="text-white/90 text-sm">An toàn lái xe</p>
-                  <div className="mt-4 text-white/80 text-xs">40+ sản phẩm</div>
-                </div>
+                </Link>
               </div>
             </div>
           </div>

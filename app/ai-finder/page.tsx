@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Send, Loader2 } from "lucide-react";
+import api from "@/lib/api";
 
 export default function AIFinderPage() {
   const [query, setQuery] = useState("");
@@ -12,30 +13,19 @@ export default function AIFinderPage() {
     if (!query.trim()) return;
 
     setIsLoading(true);
-    // Simulate AI processing
-    setTimeout(() => {
-      setSuggestions([
-        {
-          id: 1,
-          name: "Canon EOS 700D",
-          description: "Phù hợp cho nhiếp ảnh cơ bản và học tập",
-          price: "299,000",
-          category: "Camera",
-          match: 95,
-          reason: "Phù hợp với nhu cầu chụp ảnh du lịch và học tập của bạn",
-        },
-        {
-          id: 2,
-          name: "MacBook Air M2",
-          description: "Laptop nhẹ, pin lâu cho công việc văn phòng",
-          price: "899,000",
-          category: "Laptop",
-          match: 88,
-          reason: "Hiệu năng tốt cho công việc thiết kế và lập trình",
-        },
-      ]);
+    setSuggestions([]);
+
+    try {
+      const res = await api.post("/ai/recommend", { query });
+
+      const products = res.data;
+      setSuggestions(products.filter((product: any) => product.match > 0)); //match = 0 thì cút
+    } catch (err) {
+      console.error("Recommendation failed:", err);
+      alert("Đã xảy ra lỗi khi tìm kiếm. Vui lòng thử lại.");
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const quickSuggestions = [
@@ -121,7 +111,7 @@ export default function AIFinderPage() {
 
               {suggestions.map((product) => (
                 <div
-                  key={product.id}
+                  key={product.productId}
                   className="border-2 border-blue-100 hover:border-blue-200 transition-colors bg-white rounded-lg shadow-lg"
                 >
                   <div className="p-6">
@@ -137,6 +127,11 @@ export default function AIFinderPage() {
                           <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
                             {product.category}
                           </span>
+                          {product.isVerified && (
+                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm font-medium">
+                              Đã xác minh
+                            </span>
+                          )}
                         </div>
 
                         <p className="text-gray-600 mb-3">
@@ -152,7 +147,7 @@ export default function AIFinderPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="text-2xl font-bold text-blue-600">
-                              {product.price}đ
+                              {product.singleDayPrice}đ
                             </span>
                             <span className="text-gray-500 ml-1">/ ngày</span>
                           </div>
@@ -160,7 +155,10 @@ export default function AIFinderPage() {
                             <button className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors">
                               Xem chi tiết
                             </button>
-                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <button
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                              disabled={!product.isAvailable}
+                            >
                               Thuê ngay
                             </button>
                           </div>
