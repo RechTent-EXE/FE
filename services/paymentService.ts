@@ -1,4 +1,4 @@
-import apiClient from "./api";
+import api from "../lib/api";
 import {
   CreatePaymentRequest,
   CreatePaymentResponse,
@@ -13,9 +13,6 @@ class PaymentService {
     paymentData: CreatePaymentRequest
   ): Promise<CreatePaymentResponse> {
     try {
-      // Validate payment data before sending
-      console.log("Creating payment with data:", paymentData);
-
       if (!paymentData.orderId) {
         throw new Error("Mã đơn hàng (orderId) không được cung cấp");
       }
@@ -28,7 +25,7 @@ class PaymentService {
         throw new Error("Số tiền thanh toán không hợp lệ");
       }
 
-      const response = await apiClient.post("/payments", paymentData);
+      const response = await api.post("/payments", paymentData);
       return response.data;
     } catch (error: unknown) {
       const axiosError = error as {
@@ -52,7 +49,7 @@ class PaymentService {
 
   async getPaymentDetails(paymentId: string): Promise<PaymentDetails> {
     try {
-      const response = await apiClient.get(`/payments/${paymentId}`);
+      const response = await api.get(`/payments/${paymentId}`);
       return response.data;
     } catch (error: unknown) {
       const axiosError = error as {
@@ -74,18 +71,12 @@ class PaymentService {
     orderId: string,
     orderTotal?: number // Use order total from backend if provided
   ): CreatePaymentRequest {
-    console.log("Preparing payment data with orderId:", orderId);
-    console.log("Order total from backend:", orderTotal);
-    console.log("Frontend calculated total:", orderData.total);
-
     if (!orderId) {
       throw new Error("orderId is required to prepare payment data");
     }
 
     // Use order total from backend if available, otherwise use frontend calculation
     const amount = orderTotal || orderData.total;
-
-    console.log("Final amount for payment:", amount);
 
     const paymentData = {
       userId: orderData.userId,
@@ -99,7 +90,6 @@ class PaymentService {
       cancelUrl: `${window.location.origin}/payment/cancel`,
     };
 
-    console.log("Payment data prepared:", paymentData);
     return paymentData;
   }
 
@@ -119,9 +109,7 @@ class PaymentService {
     orderData: CreateOrderRequest
   ): Promise<CreateOrderResponse> {
     try {
-      console.log("Creating order with request data:", orderData);
-      const response = await apiClient.post("/orders/from-cart", orderData);
-      console.log("Order API response:", response.data);
+      const response = await api.post("/orders/from-cart", orderData);
 
       // Validate response structure
       if (!response.data) {
@@ -132,7 +120,6 @@ class PaymentService {
       const orderId = response.data.orderId || response.data.order?.orderId;
 
       if (!orderId) {
-        console.error("Order response missing orderId:", response.data);
         throw new Error("Server không trả về mã đơn hàng (orderId)");
       }
 
@@ -173,7 +160,7 @@ class PaymentService {
 
   async clearCartItems(cartId: string): Promise<void> {
     try {
-      await apiClient.delete(`/cart-items/DeleteAllByCart/${cartId}`);
+      await api.delete(`/cart-items/DeleteAllByCart/${cartId}`);
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { data?: { message?: string } };
@@ -193,9 +180,7 @@ class PaymentService {
     orderCode: string
   ): Promise<{ success: boolean; message?: string; data?: unknown }> {
     try {
-      console.log("Confirming payment with orderCode:", orderCode);
-      const response = await apiClient.post(`/payments/confirm/${orderCode}`);
-      console.log("Payment confirmation response:", response.data);
+      const response = await api.get(`/payments/confirm/${orderCode}`);
       return response.data;
     } catch (error: unknown) {
       const axiosError = error as {
@@ -213,7 +198,6 @@ class PaymentService {
         axiosError.message ||
         "Không thể xác nhận trạng thái thanh toán.";
 
-      console.error("Payment confirmation error:", errorMessage);
       throw new Error(errorMessage);
     }
   }

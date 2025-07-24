@@ -38,8 +38,6 @@ export default function PaymentCancelPage() {
       allParams[key] = value;
     });
 
-    console.log("PayOS Cancel Callback - All Parameters:", allParams);
-
     // Extract common PayOS return parameters
     const payosData: PaymentInfo = {
       code: searchParams.get("code") || undefined,
@@ -56,11 +54,7 @@ export default function PaymentCancelPage() {
       paymentLinkId: searchParams.get("paymentLinkId") || undefined,
     };
 
-    console.log("PayOS Cancel Data:", payosData);
     setPaymentInfo(payosData);
-
-    // Also log the raw query string for debugging
-    console.log("PayOS Cancel - Raw Query String:", window.location.search);
 
     // Confirm payment status (cancel) if orderCode is available
     if (payosData.orderCode) {
@@ -74,12 +68,9 @@ export default function PaymentCancelPage() {
   const confirmPaymentStatus = async (orderCode: string) => {
     setIsConfirming(true);
     try {
-      console.log("Confirming payment cancellation for orderCode:", orderCode);
       const result = await paymentService.confirmPayment(orderCode);
       setConfirmationResult(result);
-      console.log("Payment cancellation confirmation successful:", result);
     } catch (error) {
-      console.error("Failed to confirm payment cancellation:", error);
       setConfirmationResult({
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -94,10 +85,6 @@ export default function PaymentCancelPage() {
     const pendingCartId = localStorage.getItem("pendingCartId");
     if (pendingCartId) {
       localStorage.removeItem("pendingCartId");
-      console.log(
-        "Removed pendingCartId from localStorage due to payment cancellation:",
-        pendingCartId
-      );
     }
   };
 

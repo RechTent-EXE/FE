@@ -81,14 +81,10 @@ export default function OrderSummary({
 
     try {
       // Step 1: Create order from cart
-      console.log("Creating order with userId:", user.id, "cartId:", cartId);
       const orderResponse = await paymentService.createOrder({
         userId: user.id,
         cartId: cartId,
       });
-
-      console.log("Order created successfully:", orderResponse);
-      console.log("Order ID from response:", orderResponse.orderId);
 
       // Validate orderId exists
       if (!orderResponse.orderId) {
@@ -137,7 +133,6 @@ export default function OrderSummary({
 
       // Use the order ID from backend response
       const orderId = orderResponse.orderId;
-      console.log("Using orderId for payment:", orderId);
 
       // Prepare payment data with order total from backend
       const paymentData = paymentService.preparePaymentData(
@@ -145,17 +140,14 @@ export default function OrderSummary({
         orderId,
         orderResponse.total
       );
-      console.log("Payment data prepared:", paymentData);
 
       // Create payment
       const paymentResponse = await paymentService.createPayment(paymentData);
-      console.log("Payment created successfully:", paymentResponse);
 
       // Store cartId in localStorage temporarily for success callback
       // Will be cleared only if payment is successful
       if (typeof window !== "undefined") {
         localStorage.setItem("pendingCartId", cartId);
-        console.log("Stored cartId for potential clearing:", cartId);
       }
 
       // Redirect to PayOS

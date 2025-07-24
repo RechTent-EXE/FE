@@ -41,8 +41,6 @@ export default function PaymentSuccessPage() {
       allParams[key] = value;
     });
 
-    console.log("PayOS Success Callback - All Parameters:", allParams);
-
     // Extract common PayOS return parameters
     const payosData: PaymentInfo = {
       code: searchParams.get("code") || undefined,
@@ -59,11 +57,7 @@ export default function PaymentSuccessPage() {
       paymentLinkId: searchParams.get("paymentLinkId") || undefined,
     };
 
-    console.log("PayOS Success Data:", payosData);
     setPaymentInfo(payosData);
-
-    // Also log the raw query string for debugging
-    console.log("PayOS Success - Raw Query String:", window.location.search);
 
     // Confirm payment status if orderCode is available
     if (payosData.orderCode) {
@@ -74,17 +68,14 @@ export default function PaymentSuccessPage() {
   const confirmPaymentStatus = async (orderCode: string) => {
     setIsConfirming(true);
     try {
-      console.log("Confirming payment status for orderCode:", orderCode);
       const result = await paymentService.confirmPayment(orderCode);
       setConfirmationResult(result);
-      console.log("Payment confirmation successful:", result);
 
       // If payment confirmation is successful, clear cart items
       if (result.success !== false) {
         await clearCartAfterSuccess();
       }
     } catch (error) {
-      console.error("Failed to confirm payment:", error);
       setConfirmationResult({
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -100,29 +91,19 @@ export default function PaymentSuccessPage() {
       const pendingCartId = localStorage.getItem("pendingCartId");
 
       if (pendingCartId) {
-        console.log(
-          "Clearing cart items for successful payment, cartId:",
-          pendingCartId
-        );
-
         // Clear cart items
         await paymentService.clearCartItems(pendingCartId);
-        console.log("Cart items cleared successfully after payment");
 
         // Remove from localStorage
         localStorage.removeItem("pendingCartId");
-        console.log("Removed pendingCartId from localStorage");
 
         // Reload cart to update UI
         if (reloadCart) {
           await reloadCart();
-          console.log("Cart reloaded after clearing");
         }
-      } else {
-        console.log("No pendingCartId found in localStorage");
       }
-    } catch (error) {
-      console.error("Failed to clear cart after successful payment:", error);
+    } catch {
+      // Silently handle cart clearing errors
     } finally {
       setIsClearing(false);
     }
