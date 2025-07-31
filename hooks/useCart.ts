@@ -478,8 +478,8 @@ export const useCart = () => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 1;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays === 0 ? 1 : diffDays + 1;
   };
 
   const calculateSubtotal = (): number => {
@@ -494,6 +494,39 @@ export const useCart = () => {
       if (!item.actualPrice) return total;
       return total + item.actualPrice * 0.3 * item.quantity;
     }, 0);
+  };
+
+  // Calculate discounted subtotal (subtotal after applying duration discount)
+  const calculateDiscountedSubtotal = (): {
+    subtotal: number;
+    discount: number;
+    discountedSubtotal: number;
+  } => {
+    let originalSubtotal = 0;
+    let totalDiscount = 0;
+
+    cartItems.forEach((item) => {
+      const itemTotal = calculateItemTotal(item);
+      const days = calculateRentalDays(item.startDate, item.endDate);
+
+      let discountRate = 0;
+      if (days >= 30) {
+        discountRate = 0.35; // 35% discount for 30+ days
+      } else if (days >= 15) {
+        discountRate = 0.25; // 25% discount for 15+ days
+      } else if (days >= 7) {
+        discountRate = 0.15; // 15% discount for 7+ days
+      }
+
+      originalSubtotal += itemTotal;
+      totalDiscount += itemTotal * discountRate;
+    });
+
+    return {
+      subtotal: originalSubtotal,
+      discount: totalDiscount,
+      discountedSubtotal: originalSubtotal - totalDiscount,
+    };
   };
 
   // Get brands and types helper functions (similar to useFavourites)
@@ -536,6 +569,7 @@ export const useCart = () => {
     calculateRentalDays,
     calculateSubtotal,
     calculateDeposit,
+    calculateDiscountedSubtotal,
     getBrandName,
     getTypeName,
   };

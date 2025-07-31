@@ -2,29 +2,32 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Shield, ArrowLeft } from "lucide-react";
+import { User, Shield, ArrowLeft, Package } from "lucide-react";
 import { useProfile } from "../../hooks/useProfile";
 import { ProfileHeader } from "../../components/profile/ProfileHeader";
 import { ProfileForm } from "../../components/profile/ProfileForm";
 import { IdentityVerification } from "../../components/profile/IdentityVerification";
+import OrderHistory from "../../components/profile/OrderHistory";
 
 import { UpdateProfileData, PasswordChangeData } from "../../types/user";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"profile" | "identity">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "identity" | "orders">(
+    "profile"
+  );
   const [isEditing, setIsEditing] = useState(false);
 
   // Khôi phục trạng thái modal từ localStorage
   useEffect(() => {
     const savedTab = localStorage.getItem("profile-active-tab");
-    if (savedTab === "identity") {
-      setActiveTab("identity");
+    if (savedTab === "identity" || savedTab === "orders") {
+      setActiveTab(savedTab as "profile" | "identity" | "orders");
     }
   }, []);
 
   // Lưu trạng thái tab khi thay đổi
-  const handleTabChange = (tab: "profile" | "identity") => {
+  const handleTabChange = (tab: "profile" | "identity" | "orders") => {
     setActiveTab(tab);
     localStorage.setItem("profile-active-tab", tab);
   };
@@ -208,6 +211,18 @@ export default function ProfilePage() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => handleTabChange("orders")}
+                className={`flex items-center gap-3 px-6 lg:px-8 py-4 lg:py-6 font-medium transition-all ${
+                  activeTab === "orders"
+                    ? "border-b-2 border-blue-600 text-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <Package size={20} />
+                <span className="hidden sm:inline">Lịch sử đơn hàng</span>
+                <span className="sm:hidden">Đơn hàng</span>
+              </button>
             </div>
 
             {/* Profile Tab */}
@@ -246,6 +261,15 @@ export default function ProfilePage() {
                     onFaceVerification={handleFaceVerification}
                     onSubmitVerification={handleSubmitVerification}
                   />
+                </div>
+              </div>
+            )}
+
+            {/* Order History Tab */}
+            {activeTab === "orders" && (
+              <div className="p-6 lg:p-8">
+                <div className="max-w-6xl mx-auto">
+                  <OrderHistory />
                 </div>
               </div>
             )}

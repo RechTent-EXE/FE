@@ -13,7 +13,6 @@ interface OrderSummaryProps {
   itemCount: number;
   subtotal: number;
   discount: number;
-  promoDiscount: number;
   deposit: number;
   total: number;
   hasUnavailableItems: boolean;
@@ -27,7 +26,6 @@ export default function OrderSummary({
   itemCount,
   subtotal,
   discount,
-  promoDiscount,
   deposit,
   total,
   hasUnavailableItems,
@@ -80,16 +78,22 @@ export default function OrderSummary({
     setError(null);
 
     try {
-      // Step 1: Create order from cart
       const orderResponse = await paymentService.createOrder({
         userId: user.id,
         cartId: cartId,
+        discount: discount, // Amount discounted
+        total: total, // Final total after discount applied (should be 6550)
+        subtotal: subtotal, // Original subtotal before discount (should be 7000)
+        deposit: deposit, // Deposit amount (should be 600)
       });
 
       // Validate orderId exists
       if (!orderResponse.orderId) {
         throw new Error("Không nhận được mã đơn hàng từ server");
       }
+
+      const orderId = orderResponse.orderId;
+      const backendTotal = orderResponse.total;
 
       // Prepare order data for payment
       const orderItems: OrderItem[] = cartItems.map((item) => ({
@@ -114,14 +118,14 @@ export default function OrderSummary({
         subtotal,
         discount,
         deposit,
-        total,
+        total: backendTotal, // Use backend total (already includes discount)
         shippingInfo: {
           fullname: profile.fullname || "",
           phone: profile.phone || "",
           address: profile.address || "",
         },
-        paymentMethod: "credit_card", // Default to credit card
-        paymentType: "final", // Force full payment
+        paymentMethod: "credit_card",
+        paymentType: "final",
       };
 
       // Validate order data
@@ -131,14 +135,10 @@ export default function OrderSummary({
         return;
       }
 
-      // Use the order ID from backend response
-      const orderId = orderResponse.orderId;
-
-      // Prepare payment data with order total from backend
       const paymentData = paymentService.preparePaymentData(
         orderData,
         orderId,
-        orderResponse.total
+        total // Use frontend total (with discount applied) for payment amount
       );
 
       // Create payment
@@ -222,9 +222,9 @@ export default function OrderSummary({
               <span>{deposit.toLocaleString()}đ</span>
             </div>
 
-            {promoDiscount > 0 && (
+            {discount > 0 && (
               <div className="flex justify-between text-green-600">
-                <span>Giảm giá ({promoDiscount}%)</span>
+                <span>Giảm giá theo thời gian thuê</span>
                 <span>-{discount.toLocaleString()}đ</span>
               </div>
             )}

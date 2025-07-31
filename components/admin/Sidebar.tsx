@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -47,6 +48,11 @@ const menuItems: MenuItem[] = [
     label: "Quản lý người dùng",
     href: "/admin/users",
     icon: <Users size={20} />,
+  },
+  {
+    label: "Quản lý trả hàng",
+    href: "/admin/returns",
+    icon: <RotateCcw size={20} />,
   },
   {
     label: "Báo cáo",

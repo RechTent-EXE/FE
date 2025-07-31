@@ -6,6 +6,8 @@ import {
   OrderData,
   CreateOrderRequest,
   CreateOrderResponse,
+  PaymentHistory,
+  OrderDetail,
 } from "../types/payment";
 
 class PaymentService {
@@ -75,7 +77,6 @@ class PaymentService {
       throw new Error("orderId is required to prepare payment data");
     }
 
-    // Use order total from backend if available, otherwise use frontend calculation
     const amount = orderTotal || orderData.total;
 
     const paymentData = {
@@ -83,9 +84,9 @@ class PaymentService {
       orderId: orderId,
       amount: amount,
       paymentMethod: orderData.paymentMethod,
-      paymentType: "final" as const, // Force full payment
+      paymentType: "deposit" as const,
       paidAt: new Date().toISOString(),
-      // Add callback URLs if needed
+
       returnUrl: `${window.location.origin}/payment/success`,
       cancelUrl: `${window.location.origin}/payment/cancel`,
     };
@@ -231,6 +232,46 @@ class PaymentService {
     }
 
     return { isValid: true };
+  }
+
+  // Get payment history for user profile
+  async getUserPaymentHistory(userId: string): Promise<PaymentHistory[]> {
+    try {
+      const response = await api.get(`/payments/user/${userId}`);
+      return response.data;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Không thể lấy lịch sử thanh toán.";
+
+      throw new Error(errorMessage);
+    }
+  }
+
+  // Get order details by orderId
+  async getOrderDetails(orderId: string): Promise<OrderDetail[]> {
+    try {
+      const response = await api.get(`/order-details/by-order/${orderId}`);
+      return response.data;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Không thể lấy chi tiết đơn hàng.";
+
+      throw new Error(errorMessage);
+    }
   }
 }
 

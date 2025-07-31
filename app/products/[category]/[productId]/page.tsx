@@ -194,8 +194,9 @@ export default function ProductDetailPage({
   useEffect(() => {
     if (startDate && endDate) {
       const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      setRentalDays(diffDays > 0 ? diffDays : 1);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      // If start and end are the same day, return 1, otherwise add 1 to include both dates
+      setRentalDays(diffDays === 0 ? 1 : diffDays + 1);
     }
   }, [startDate, endDate]);
 

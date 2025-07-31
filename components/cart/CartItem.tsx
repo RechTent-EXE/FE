@@ -62,6 +62,16 @@ export default function CartItem({
 
   const rentalDays = calculateRentalDays(item.startDate, item.endDate);
 
+  // Calculate discount rate for this item
+  const getDiscountRate = (days: number): number => {
+    if (days >= 30) return 35;
+    if (days >= 15) return 25;
+    if (days >= 7) return 15;
+    return 0;
+  };
+
+  const discountRate = getDiscountRate(rentalDays);
+
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 p-6 transition-all hover:shadow-xl">
       <div className="flex flex-col lg:flex-row gap-6">
@@ -122,6 +132,11 @@ export default function CartItem({
                 {(item.singleDayPrice || 0).toLocaleString()}đ/ngày ×{" "}
                 {rentalDays} ngày × {item.quantity}
               </div>
+              {discountRate > 0 && (
+                <div className="text-sm text-green-600 font-medium">
+                  🎉 Tiết kiệm {discountRate}%
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3">

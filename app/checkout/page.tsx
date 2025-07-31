@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
-import { CreditCard, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cartItems, calculateSubtotal, calculateDeposit } = useCart();
+  const { cartItems, calculateDiscountedSubtotal, calculateDeposit } =
+    useCart();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const subtotal = calculateSubtotal();
+  const { subtotal, discountedSubtotal } = calculateDiscountedSubtotal();
   const deposit = calculateDeposit();
-  const total = subtotal + deposit;
+  const total = discountedSubtotal + deposit;
 
   const handlePayment = async () => {
     setIsProcessing(true);

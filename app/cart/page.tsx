@@ -1,19 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { useCart } from "@/hooks/useCart";
 
 // Components
 import CartHeader from "@/components/cart/CartHeader";
 import CartItem from "@/components/cart/CartItem";
-import PromoCodeSection from "@/components/cart/PromoCodeSection";
+
 import OrderSummary from "@/components/cart/OrderSummary";
 import EmptyCart from "@/components/cart/EmptyCart";
 import ShippingInformation from "@/components/cart/ShippingInformation";
 
 export default function CartPage() {
-  const [promoDiscount, setPromoDiscount] = useState(0);
-
   // Hooks
   const {
     cartItems,
@@ -25,8 +22,8 @@ export default function CartPage() {
     removeFromCart,
     calculateItemTotal,
     calculateRentalDays,
-    calculateSubtotal,
     calculateDeposit,
+    calculateDiscountedSubtotal,
     getBrandName,
     getCartCount,
   } = useCart();
@@ -34,33 +31,12 @@ export default function CartPage() {
   // Debug: Log cartId to console
   console.log("Cart ID:", cartId);
 
-  // Calculate totals
-  const subtotal = calculateSubtotal();
-  const discount = (subtotal * promoDiscount) / 100;
+  // Calculate totals with discount
+  const { subtotal, discount, discountedSubtotal } =
+    calculateDiscountedSubtotal();
   const deposit = calculateDeposit();
-  const total = subtotal - discount + deposit;
+  const total = discountedSubtotal + deposit; // Discounted rental + deposit
   const hasUnavailableItems = cartItems.some((item) => !item.isAvailable);
-
-  // Promo code handler
-  const handleApplyPromo = async (promoCode: string) => {
-    try {
-      // Mock promo code validation - replace with real API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      if (promoCode.toLowerCase() === "rechtent10") {
-        setPromoDiscount(10);
-        alert("Áp dụng mã giảm giá thành công! Giảm 10%");
-      } else if (promoCode.toLowerCase() === "newuser20") {
-        setPromoDiscount(20);
-        alert("Áp dụng mã giảm giá thành công! Giảm 20%");
-      } else {
-        alert("Mã giảm giá không hợp lệ");
-      }
-    } catch (error) {
-      console.error("Error applying promo code:", error);
-      alert("Có lỗi xảy ra khi áp dụng mã giảm giá");
-    }
-  };
 
   // Update quantity handler with debug
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
@@ -156,11 +132,6 @@ export default function CartPage() {
               {/* Sidebar */}
               <div className="space-y-6">
                 {/* Promo Code */}
-                <PromoCodeSection
-                  onApplyPromo={handleApplyPromo}
-                  promoDiscount={promoDiscount}
-                />
-
                 {/* Shipping Information */}
                 <ShippingInformation />
 
@@ -169,7 +140,6 @@ export default function CartPage() {
                   itemCount={getCartCount()}
                   subtotal={subtotal}
                   discount={discount}
-                  promoDiscount={promoDiscount}
                   deposit={deposit}
                   total={total}
                   hasUnavailableItems={hasUnavailableItems}

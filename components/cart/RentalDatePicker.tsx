@@ -25,7 +25,7 @@ export default function RentalDatePicker({
       onDateChange(tempStartDate, tempEndDate);
       setIsExpanded(false);
     } else {
-      alert("Ngày bắt đầu phải trước ngày kết thúc");
+      alert("Ngày kết thúc phải từ ngày bắt đầu trở đi");
     }
   };
 
@@ -39,8 +39,18 @@ export default function RentalDatePicker({
     const start = new Date(tempStartDate);
     const end = new Date(tempEndDate);
     const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 1;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    // If start and end are the same day, return 1, otherwise add 1 to include both dates
+    return diffDays === 0 ? 1 : diffDays + 1;
+  };
+
+  const calculateRentalDaysFromProps = () => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    // If start and end are the same day, return 1, otherwise add 1 to include both dates
+    return diffDays === 0 ? 1 : diffDays + 1;
   };
 
   const formatDate = (dateString: string) => {
@@ -62,7 +72,10 @@ export default function RentalDatePicker({
 
         <div className="flex items-center gap-3">
           <div className="text-sm text-gray-600">
-            {calculateRentalDays()} ngày
+            {isExpanded
+              ? calculateRentalDays()
+              : calculateRentalDaysFromProps()}{" "}
+            ngày
           </div>
           <button
             onClick={() => setIsExpanded(!isExpanded)}

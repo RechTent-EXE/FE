@@ -96,6 +96,10 @@ export interface PaymentFormData {
 export interface CreateOrderRequest {
   userId: string;
   cartId: string;
+  discount?: number; // Duration-based discount amount
+  total?: number; // Final total after discount applied
+  subtotal?: number; // Original subtotal before discount
+  deposit?: number; // Deposit amount
 }
 
 export interface CreateOrderResponse {
@@ -126,4 +130,31 @@ export interface CreateOrderResponse {
     endDate: string;
   }>;
   totalAmount?: number;
+}
+
+// Payment history for profile
+export interface PaymentHistory {
+  _id: string;
+  id: string;
+  userId: string;
+  orderId: string;
+  orderCode: number;
+  amount: number;
+  paymentMethod: string;
+  paymentType: string;
+  paidAt: string;
+  payosUrl: string;
+  status: "paid" | "cancelled" | "pending";
+  __v: number;
+}
+
+// Order detail for viewing products in an order
+export interface OrderDetail {
+  _id: string;
+  id: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+  totalPrice: number;
+  __v: number;
 }
