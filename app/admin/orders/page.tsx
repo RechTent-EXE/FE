@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Eye,
   Calendar,
@@ -10,71 +10,14 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/formatters";
-
-interface Order {
-  _id: string;
-  orderId: string;
-  userId: string;
-  cartId: string;
-  total: number;
-  depositAmount: number;
-  status: string;
-  createdAt: string;
-  __v: number;
-  depositPaidAt?: string;
-  returnRequest?: {
-    photos: string[];
-    bankName: string;
-    bankAccountNumber: string;
-    bankAccountHolder: string;
-    submittedAt: string;
-    verified: boolean;
-    isHidden: boolean;
-  };
-  finalPaidAt?: string;
-}
+import { useCompletedOrders } from "@/hooks/useOrders";
+import { Order } from "@/types/payment";
 
 export default function OrdersManagementPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch("/api/orders", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // Filter only completed orders
-      const completedOrders = data.filter(
-        (order: Order) => order.status === "completed"
-      );
-      setOrders(completedOrders);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setError("Có lỗi xảy ra khi tải danh sách đơn hàng");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use hook for orders
+  const { orders, isLoading: loading, isError } = useCompletedOrders();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN", {
@@ -112,13 +55,15 @@ export default function OrdersManagementPage() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
-          <div className="text-red-500 mb-4">{error}</div>
+          <div className="text-red-500 mb-4">
+            Có lỗi xảy ra khi tải danh sách đơn hàng
+          </div>
           <button
-            onClick={fetchOrders}
+            onClick={() => window.location.reload()}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
             Thử lại

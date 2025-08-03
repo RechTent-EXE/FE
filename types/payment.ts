@@ -159,3 +159,27 @@ export interface OrderDetail {
   totalPrice: number;
   __v: number;
 }
+
+// Order interface for admin dashboard
+export interface Order {
+  _id: string;
+  orderId: string;
+  userId: string;
+  cartId: string;
+  total: number;
+  depositAmount: number;
+  status: string;
+  createdAt: string;
+  __v: number;
+  depositPaidAt?: string;
+  returnRequest?: {
+    photos: string[];
+    bankName: string;
+    bankAccountNumber: string;
+    bankAccountHolder: string;
+    submittedAt: string;
+    verified: boolean;
+    isHidden: boolean;
+  };
+  finalPaidAt?: string;
+}

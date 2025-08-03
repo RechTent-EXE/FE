@@ -1,56 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Package,
   DollarSign,
   ShoppingCart,
   Calendar,
   Filter,
+  Users,
+  TrendingUp,
+  AlertTriangle,
 } from "lucide-react";
-import { fetchRentedProducts } from "@/lib/api/products";
-
-interface Order {
-  _id: string;
-  orderId: string;
-  userId: string;
-  cartId: string;
-  total: number;
-  depositAmount: number;
-  status: string;
-  createdAt: string;
-  __v: number;
-  depositPaidAt?: string;
-  returnRequest?: {
-    photos: string[];
-    bankName: string;
-    bankAccountNumber: string;
-    bankAccountHolder: string;
-    submittedAt: string;
-    verified: boolean;
-    isHidden: boolean;
-  };
-  finalPaidAt?: string;
-}
-
-interface DashboardStats {
-  totalRevenue: number;
-  totalOrders: number;
-  totalProducts: number;
-  dailyRevenue: number;
-}
+import {
+  useDashboardOverview,
+  useRecentOrders,
+} from "@/hooks/useAdminDashboard";
+import { useUserStats } from "@/hooks/useAdminUsers";
+import { useProductStats } from "@/hooks/useAdminProducts";
 
 export default function AdminDashboard() {
-  const [products, setProducts] = useState<unknown[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRevenue: 0,
-    totalOrders: 0,
-    totalProducts: 0,
-    dailyRevenue: 0,
-  });
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
 
@@ -60,113 +28,28 @@ export default function AdminDashboard() {
     new Date().toISOString().slice(0, 7)
   );
 
-  // Filter orders based on selected criteria
-  const filterOrders = () => {
-    let filtered = orders;
+  // Use admin hooks
+  const { isLoading: dashboardLoading } = useDashboardOverview();
+  const { orders: allOrders, isLoading: ordersLoading } = useRecentOrders();
+  const { data: userStats, isLoading: userStatsLoading } = useUserStats();
+  const { data: productStats, isLoading: productStatsLoading } =
+    useProductStats();
 
-    if (filterType === "month") {
-      filtered = orders.filter((order) => {
-        const orderDate = new Date(order.createdAt);
-        const selectedDate = new Date(selectedMonth);
-        return (
-          orderDate.getMonth() === selectedDate.getMonth() &&
-          orderDate.getFullYear() === selectedDate.getFullYear()
-        );
-      });
-    }
+  // Filter only completed orders
+  const orders = allOrders.filter((order) => order.status === "completed");
 
-    setFilteredOrders(filtered);
-    setCurrentPage(1); // Reset to first page when filtering
-  };
-
-  // Calculate stats based on filtered orders
-  const calculateStats = (ordersToCalculate: Order[]) => {
-    const totalRevenue = ordersToCalculate.reduce(
-      (sum: number, order: Order) => {
-        return sum + (order.total - order.depositAmount);
-      },
-      0
-    );
-
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    const monthlyOrders = ordersToCalculate.filter((order: Order) => {
-      const orderDate = new Date(order.createdAt);
-      return (
-        orderDate.getMonth() === currentMonth &&
-        orderDate.getFullYear() === currentYear
-      );
-    });
-
-    const monthlyRevenue = monthlyOrders.reduce((sum: number, order: Order) => {
-      return sum + (order.total - order.depositAmount);
-    }, 0);
-
-    const dailyRevenue =
-      monthlyRevenue / new Date(currentYear, currentMonth + 1, 0).getDate();
-
-    return {
-      totalRevenue,
-      totalOrders: ordersToCalculate.length,
-      totalProducts: products.length,
-      dailyRevenue: Math.round(dailyRevenue),
-    };
-  };
-
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        // Load products
-        const productsData = await fetchRentedProducts();
-        setProducts(productsData);
-
-        // Load orders
-        const ordersResponse = await fetch("/api/orders", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
-
-        if (ordersResponse.ok) {
-          const ordersData = await ordersResponse.json();
-          const completedOrders = ordersData.filter(
-            (order: Order) => order.status === "completed"
-          );
-          setOrders(completedOrders);
-          setFilteredOrders(completedOrders);
-        }
-      } catch (error) {
-        console.error("Error loading dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboardData();
-  }, []);
-
-  // Update stats when filtered orders change
-  useEffect(() => {
-    if (filteredOrders.length > 0 || orders.length > 0) {
-      const newStats = calculateStats(filteredOrders);
-      setStats(newStats);
-    }
-  }, [filteredOrders, orders, products.length]);
-
-  // Apply filter when filter criteria change
-  useEffect(() => {
-    filterOrders();
-  }, [filterType, selectedMonth, orders]);
+  // Calculate revenue from completed orders
+  const totalRevenue = orders.reduce(
+    (sum, order) => sum + (order.total - order.depositAmount),
+    0
+  );
+  const dailyRevenue = totalRevenue > 0 ? Math.round(totalRevenue / 30) : 0; // Simple daily calculation
 
   // Pagination
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const currentOrders = filteredOrders.slice(
-    indexOfFirstOrder,
-    indexOfLastOrder
-  );
-  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(orders.length / ordersPerPage);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN", {
@@ -184,6 +67,12 @@ export default function AdminDashboard() {
       currency: "VND",
     }).format(amount);
   };
+
+  const loading =
+    dashboardLoading ||
+    ordersLoading ||
+    userStatsLoading ||
+    productStatsLoading;
 
   return (
     <div className="space-y-6">
@@ -204,7 +93,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Doanh thu</p>
               <p className="text-3xl font-bold text-green-600">
-                {loading ? "..." : formatCurrency(stats.totalRevenue)}
+                {loading ? "..." : formatCurrency(totalRevenue)}
               </p>
             </div>
             <div className="bg-green-50 p-3 rounded-lg">
@@ -218,7 +107,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng đơn hàng</p>
               <p className="text-3xl font-bold text-blue-600">
-                {loading ? "..." : stats.totalOrders}
+                {loading ? "..." : orders.length}
               </p>
             </div>
             <div className="bg-blue-50 p-3 rounded-lg">
@@ -232,7 +121,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng sản phẩm</p>
               <p className="text-3xl font-bold text-indigo-600">
-                {loading ? "..." : stats.totalProducts}
+                {loading ? "..." : productStats?.totalProducts || 0}
               </p>
             </div>
             <div className="bg-indigo-50 p-3 rounded-lg">
@@ -248,11 +137,64 @@ export default function AdminDashboard() {
                 Doanh thu/ngày
               </p>
               <p className="text-3xl font-bold text-purple-600">
-                {loading ? "..." : formatCurrency(stats.dailyRevenue)}
+                {loading ? "..." : formatCurrency(dailyRevenue)}
               </p>
             </div>
             <div className="bg-purple-50 p-3 rounded-lg">
               <Calendar className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Tổng người dùng
+              </p>
+              <p className="text-2xl font-bold text-orange-600">
+                {loading ? "..." : userStats?.totalUsers || 0}
+              </p>
+            </div>
+            <div className="bg-orange-50 p-3 rounded-lg">
+              <Users className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Sản phẩm hết hàng
+              </p>
+              <p className="text-2xl font-bold text-red-600">
+                {loading ? "..." : productStats?.outOfStockProducts || 0}
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Đánh giá trung bình
+              </p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {loading
+                  ? "..."
+                  : (productStats?.averageRating || 0).toFixed(1)}
+              </p>
+            </div>
+            <div className="bg-yellow-50 p-3 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-yellow-600" />
             </div>
           </div>
         </div>
@@ -359,8 +301,8 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mt-6">
                 <div className="text-sm text-gray-700">
                   Hiển thị {indexOfFirstOrder + 1} đến{" "}
-                  {Math.min(indexOfLastOrder, filteredOrders.length)} trong tổng
-                  số {filteredOrders.length} đơn hàng
+                  {Math.min(indexOfLastOrder, orders.length)} trong tổng số{" "}
+                  {orders.length} đơn hàng
                 </div>
                 <div className="flex space-x-2">
                   <button

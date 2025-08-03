@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import AdminSidebar from "@/components/admin/Sidebar";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AdminLayout({
   children,
@@ -66,36 +68,48 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="flex">
-        {/* Sidebar */}
-        <AdminSidebar />
+    <div className="min-h-screen bg-gray-100 flex admin-page relative z-10">
+      {/* Sidebar */}
+      <AdminSidebar />
 
-        {/* Main Content */}
-        <div className="flex-1 ml-64">
-          {/* Header */}
-          <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Quản trị hệ thống
-              </h1>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  Xin chào, {user?.email}
+      {/* Main Content */}
+      <div className="flex-1 ml-64 flex flex-col min-h-screen relative z-10">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Quản trị hệ thống
+            </h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Xin chào, {user?.email}
+              </span>
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-sm font-semibold text-white">
+                  {user?.email?.charAt(0).toUpperCase()}
                 </span>
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-semibold text-white">
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
-          {/* Content */}
-          <main className="p-6">{children}</main>
-        </div>
+        {/* Content */}
+        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
       </div>
+
+      {/* Toast Container for admin */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 }

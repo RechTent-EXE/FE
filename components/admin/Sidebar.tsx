@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   RotateCcw,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -45,6 +46,11 @@ const menuItems: MenuItem[] = [
     label: "Quản lý đơn hàng",
     href: "/admin/orders",
     icon: <Package size={20} />,
+  },
+  {
+    label: "Quản lý người dùng",
+    href: "/admin/users",
+    icon: <Users size={20} />,
   },
   {
     label: "Quản lý trả hàng",

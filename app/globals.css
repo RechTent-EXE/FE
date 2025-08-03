@@ -1,1 +1,55 @@
 @import "tailwindcss";
+
+/* Hide footer in admin pages */
+.admin-page footer,
+.admin-page ~ footer,
+.admin-page + footer,
+body:has(.admin-page) footer,
+.admin-page ~ * footer,
+.admin-page + * footer,
+.admin-page ~ * ~ footer,
+.admin-page + * + footer {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  z-index: -9999 !important;
+}
+
+/* Ensure admin layout takes full height and prevents footer overlap */
+.admin-page {
+  min-height: 100vh;
+  position: relative;
+}
+
+.admin-page .flex-1 {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.admin-page main {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 2rem;
+}
+
+/* Force hide footer when admin page is present */
+.admin-page ~ * footer,
+.admin-page + * footer {
+  display: none !important;
+}
+
+/* Additional CSS to ensure proper layout */
+.admin-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-page > * {
+  flex-shrink: 0;
+}
+
+.admin-page .flex-1 {
+  flex: 1;
+  overflow: hidden;
+}
