@@ -145,6 +145,7 @@ export interface PaymentHistory {
   paidAt: string;
   payosUrl: string;
   status: "paid" | "cancelled" | "pending";
+  orderStatus?: string; // Status of the order (completed, pending, etc.)
   __v: number;
 }
 

@@ -238,7 +238,31 @@ class PaymentService {
   async getUserPaymentHistory(userId: string): Promise<PaymentHistory[]> {
     try {
       const response = await api.get(`/payments/user/${userId}`);
-      return response.data;
+      const payments = response.data;
+
+      // Fetch order status for each payment to get complete information
+      const paymentsWithOrderStatus = await Promise.all(
+        payments.map(async (payment: PaymentHistory) => {
+          try {
+            const orderResponse = await api.get(`/orders/${payment.orderId}`);
+            return {
+              ...payment,
+              orderStatus: orderResponse.data.status,
+            };
+          } catch (error) {
+            console.error(
+              `Failed to fetch order status for ${payment.orderId}:`,
+              error
+            );
+            return {
+              ...payment,
+              orderStatus: "unknown",
+            };
+          }
+        })
+      );
+
+      return paymentsWithOrderStatus;
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { data?: { message?: string } };

@@ -5,9 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Package,
   Home,
-  Users,
-  BarChart3,
-  Settings,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -45,29 +42,14 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    label: "Quản lý người dùng",
-    href: "/admin/users",
-    icon: <Users size={20} />,
+    label: "Quản lý đơn hàng",
+    href: "/admin/orders",
+    icon: <Package size={20} />,
   },
   {
     label: "Quản lý trả hàng",
     href: "/admin/returns",
     icon: <RotateCcw size={20} />,
-  },
-  {
-    label: "Báo cáo",
-    href: "/admin/reports",
-    icon: <BarChart3 size={20} />,
-  },
-  {
-    label: "Cài đặt",
-    href: "/admin/settings",
-    icon: <Settings size={20} />,
-  },
-  {
-    label: "Test Admin",
-    href: "/admin/test",
-    icon: <BarChart3 size={20} />,
   },
 ];
 

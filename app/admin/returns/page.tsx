@@ -5,7 +5,7 @@ import { Eye, Check, X, Calendar, CreditCard, User } from "lucide-react";
 import { returnService, ReturnRequest } from "@/services/returnService";
 import { formatCurrency } from "@/utils/formatters";
 
-type TabType = "pending" | "approved" | "rejected";
+type TabType = "pending" | "verified" | "refused";
 
 export default function ReturnsManagementPage() {
   const [activeTab, setActiveTab] = useState<TabType>("pending");
@@ -29,10 +29,10 @@ export default function ReturnsManagementPage() {
         case "pending":
           requests = await returnService.getPendingReturnRequests();
           break;
-        case "approved":
+        case "verified":
           requests = await returnService.getApprovedReturnRequests();
           break;
-        case "rejected":
+        case "refused":
           requests = await returnService.getRejectedReturnRequests();
           break;
       }
@@ -106,9 +106,9 @@ export default function ReturnsManagementPage() {
     switch (tab) {
       case "pending":
         return "Chờ xử lý";
-      case "approved":
+      case "verified":
         return "Đã phê duyệt";
-      case "rejected":
+      case "refused":
         return "Đã từ chối";
     }
   };
@@ -117,9 +117,9 @@ export default function ReturnsManagementPage() {
     switch (tab) {
       case "pending":
         return "đang chờ xử lý";
-      case "approved":
+      case "verified":
         return "đã được phê duyệt";
-      case "rejected":
+      case "refused":
         return "đã bị từ chối";
     }
   };
@@ -136,7 +136,7 @@ export default function ReturnsManagementPage() {
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm p-1">
         <div className="flex space-x-1">
-          {(["pending", "approved", "rejected"] as TabType[]).map((tab) => (
+          {(["pending", "verified", "refused"] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -182,7 +182,7 @@ export default function ReturnsManagementPage() {
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           activeTab === "pending"
                             ? "bg-yellow-100 text-yellow-800"
-                            : activeTab === "approved"
+                            : activeTab === "verified"
                             ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
                         }`}
@@ -288,7 +288,7 @@ export default function ReturnsManagementPage() {
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       activeTab === "pending"
                         ? "bg-yellow-100 text-yellow-800"
-                        : activeTab === "approved"
+                        : activeTab === "verified"
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
                     }`}

@@ -121,15 +121,15 @@ export const returnService = {
     return response.data;
   },
 
-  // Get approved return requests (for admin)
+  // Get verified return requests (for admin)
   async getApprovedReturnRequests(): Promise<ReturnRequest[]> {
-    const response = await api.get("/orders/return-requests/approved");
+    const response = await api.get("/orders/return-requests/verified");
     return response.data;
   },
 
-  // Get rejected return requests (for admin)
+  // Get refused return requests (for admin)
   async getRejectedReturnRequests(): Promise<ReturnRequest[]> {
-    const response = await api.get("/orders/return-requests/rejected");
+    const response = await api.get("/orders/return-requests/refused");
     return response.data;
   },
 };

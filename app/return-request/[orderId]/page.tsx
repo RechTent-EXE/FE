@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Camera, Upload, ArrowLeft } from "lucide-react";
+import { Upload, ArrowLeft } from "lucide-react";
 import { returnService } from "@/services/returnService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -20,17 +20,13 @@ export default function ReturnRequestPage() {
   const orderId = params.orderId as string;
 
   const [formData, setFormData] = useState<ReturnRequestData>({
-    photos: [],
+    photos: ["", "", "", "", "", ""], // 6 photos: 5 required + 1 optional for accessories
     bankName: "",
     bankAccountNumber: "",
     bankAccountHolder: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [uploadMethod, setUploadMethod] = useState<"file" | "camera">("file");
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleInputChange = (
@@ -48,7 +44,14 @@ export default function ReturnRequestPage() {
     maxWidth: number = 800,
     quality: number = 0.7
   ): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      // Check file size (10MB = 10 * 1024 * 1024 bytes)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        reject(new Error("File size exceeds 10MB limit"));
+        return;
+      }
+
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       const img = new Image();
@@ -65,81 +68,44 @@ export default function ReturnRequestPage() {
         resolve(compressedBase64);
       };
 
+      img.onerror = () => {
+        reject(new Error("Failed to load image"));
+      };
+
       img.src = URL.createObjectURL(file);
     });
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const compressedImage = await compressImage(file);
-        setFormData((prev) => ({
-          ...prev,
-          photos: [compressedImage],
-        }));
-      } catch (error) {
-        console.error("Error compressing image:", error);
-        alert("Có lỗi xảy ra khi xử lý ảnh. Vui lòng thử lại.");
+  const handleFileUpload =
+    (photoIndex: number) =>
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        try {
+          const compressedImage = await compressImage(file);
+          setFormData((prev) => ({
+            ...prev,
+            photos: prev.photos.map((photo, index) =>
+              index === photoIndex ? compressedImage : photo
+            ),
+          }));
+        } catch (error) {
+          console.error("Error compressing image:", error);
+          if (error instanceof Error && error.message.includes("10MB")) {
+            alert("Kích thước file vượt quá 10MB. Vui lòng chọn file nhỏ hơn.");
+          } else {
+            alert("Có lỗi xảy ra khi xử lý ảnh. Vui lòng thử lại.");
+          }
+        }
       }
-    }
-  };
+    };
 
-  const startCamera = async () => {
-    try {
-      setShowCamera(true);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-      alert("Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.");
-    }
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      const context = canvas.getContext("2d");
-
-      // Compress captured image
-      const maxWidth = 800;
-      const { videoWidth, videoHeight } = video;
-      const ratio = Math.min(maxWidth / videoWidth, maxWidth / videoHeight);
-
-      canvas.width = videoWidth * ratio;
-      canvas.height = videoHeight * ratio;
-
-      if (context) {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const base64String = canvas.toDataURL("image/jpeg", 0.7);
-        setFormData((prev) => ({
-          ...prev,
-          photos: [base64String],
-        }));
-        stopCamera();
-      }
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-    }
-    setShowCamera(false);
-  };
-
-  const removePhoto = () => {
+  const removePhoto = (photoIndex: number) => {
     setFormData((prev) => ({
       ...prev,
-      photos: [],
+      photos: prev.photos.map((photo, index) =>
+        index === photoIndex ? "" : photo
+      ),
     }));
   };
 
@@ -149,8 +115,14 @@ export default function ReturnRequestPage() {
       return;
     }
 
-    if (formData.photos.length === 0) {
-      alert("Vui lòng tải lên ít nhất 1 ảnh sản phẩm");
+    // Check if at least 5 required photos are uploaded (excluding the optional accessories photo)
+    const requiredPhotos = formData.photos
+      .slice(0, 5)
+      .filter((photo) => photo !== "");
+    if (requiredPhotos.length < 5) {
+      alert(
+        "Vui lòng tải lên đầy đủ 5 ảnh bắt buộc: toàn bộ sản phẩm, mặt trước, mặt sau, bên trái, bên phải"
+      );
       return;
     }
 
@@ -165,7 +137,13 @@ export default function ReturnRequestPage() {
 
     setIsSubmitting(true);
     try {
-      await returnService.submitReturnRequest(orderId, formData);
+      // Filter out empty photos and create submission data
+      const submissionData = {
+        ...formData,
+        photos: formData.photos.filter((photo) => photo !== ""),
+      };
+
+      await returnService.submitReturnRequest(orderId, submissionData);
       alert("Yêu cầu trả hàng đã được gửi thành công!");
       router.push("/profile");
     } catch (error) {
@@ -199,109 +177,73 @@ export default function ReturnRequestPage() {
 
         {/* Photo Upload Section */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Ảnh sản phẩm trả</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            Ảnh sản phẩm trả (Tối đa 10MB mỗi ảnh)
+          </h2>
 
-          {/* Upload Method Toggle */}
-          <div className="flex space-x-4 mb-4">
-            <button
-              onClick={() => setUploadMethod("file")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
-                uploadMethod === "file"
-                  ? "bg-blue-50 border-blue-500 text-blue-700"
-                  : "bg-gray-50 border-gray-300 text-gray-700"
-              }`}
-            >
-              <Upload className="w-4 h-4" />
-              <span>Tải từ máy</span>
-            </button>
-            <button
-              onClick={() => setUploadMethod("camera")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
-                uploadMethod === "camera"
-                  ? "bg-blue-50 border-blue-500 text-blue-700"
-                  : "bg-gray-50 border-gray-300 text-gray-700"
-              }`}
-            >
-              <Camera className="w-4 h-4" />
-              <span>Chụp ảnh</span>
-            </button>
-          </div>
-
-          {/* File Upload */}
-          {uploadMethod === "file" && (
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
+            {[
+              { index: 0, title: "Ảnh toàn bộ sản phẩm", required: true },
+              { index: 1, title: "Ảnh mặt trước", required: true },
+              { index: 2, title: "Ảnh mặt sau", required: true },
+              { index: 3, title: "Ảnh bên trái", required: true },
+              { index: 4, title: "Ảnh bên phải", required: true },
+              { index: 5, title: "Ảnh dụng cụ đi kèm", required: false },
+            ].map(({ index, title, required }) => (
+              <div
+                key={index}
+                className={`border-2 border-dashed border-gray-300 rounded-lg p-4 ${
+                  index === 5 ? "md:col-span-2 lg:col-span-2" : ""
+                }`}
               >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-gray-600">Click để chọn ảnh</p>
-              </button>
-            </div>
-          )}
+                <h3 className="text-sm font-medium text-gray-700 mb-2 text-center">
+                  {title}{" "}
+                  {required ? (
+                    <span className="text-red-500">*</span>
+                  ) : (
+                    <span className="text-gray-400">(Tùy chọn)</span>
+                  )}
+                </h3>
 
-          {/* Camera Section */}
-          {uploadMethod === "camera" && (
-            <div>
-              {!showCamera ? (
-                <button
-                  onClick={startCamera}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Camera className="w-5 h-5" />
-                  <span>Mở camera</span>
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    className="w-full rounded-lg"
-                  />
-                  <div className="flex space-x-4">
+                {formData.photos[index] ? (
+                  <div className="relative">
+                    <img
+                      src={formData.photos[index]}
+                      alt={title}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
                     <button
-                      onClick={capturePhoto}
-                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      onClick={() => removePhoto(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
                     >
-                      Chụp ảnh
-                    </button>
-                    <button
-                      onClick={stopCamera}
-                      className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                      Hủy
+                      ×
                     </button>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Photo Preview */}
-          {formData.photos.length > 0 && (
-            <div className="mt-4">
-              <div className="relative inline-block">
-                <img
-                  src={formData.photos[0]}
-                  alt="Preview"
-                  className="w-32 h-32 object-cover rounded-lg border"
-                />
-                <button
-                  onClick={removePhoto}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                >
-                  ×
-                </button>
+                ) : (
+                  <div className="text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload(index)}
+                      className="hidden"
+                      id={`photo-${index}`}
+                    />
+                    <label
+                      htmlFor={`photo-${index}`}
+                      className="cursor-pointer block w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-blue-400 transition-colors"
+                    >
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-xs text-gray-600">
+                          Click để chọn ảnh
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
           <canvas ref={canvasRef} className="hidden" />
         </div>

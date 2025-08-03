@@ -73,10 +73,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
   }, [user?.id, reloadTrigger]);
 
   // Filter payments by status
-  const getPaidPayments = () => payments.filter((p) => p.status === "paid");
+  const getPaidPayments = () =>
+    payments.filter(
+      (p) => p.status === "paid" && p.orderStatus !== "completed"
+    );
   const getCancelledPayments = () =>
     payments.filter((p) => p.status === "cancelled");
-  const getReturnedPayments = () => []; // Tạm thời empty, sẽ có logic sau
+  const getReturnedPayments = () =>
+    payments.filter((p) => p.orderStatus === "completed");
 
   const getCurrentPayments = () => {
     switch (activeTab) {
@@ -186,14 +190,18 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                     </p>
                     <span
                       className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                        payment.status === "paid"
+                        payment.orderStatus === "completed"
+                          ? "bg-blue-100 text-blue-800"
+                          : payment.status === "paid"
                           ? "bg-green-100 text-green-800"
                           : payment.status === "cancelled"
                           ? "bg-red-100 text-red-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {payment.status === "paid"
+                      {payment.orderStatus === "completed"
+                        ? "Đã trả"
+                        : payment.status === "paid"
                         ? "Đã thanh toán"
                         : payment.status === "cancelled"
                         ? "Đã hủy"
@@ -210,14 +218,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                     Xem chi tiết
                   </button>
 
-                  {activeTab === "paid" && (
-                    <button
-                      onClick={() => handleReturnOrder(payment.orderId)}
-                      className="px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
-                    >
-                      Trả hàng
-                    </button>
-                  )}
+                  {activeTab === "paid" &&
+                    payment.orderStatus !== "completed" && (
+                      <button
+                        onClick={() => handleReturnOrder(payment.orderId)}
+                        className="px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
+                      >
+                        Trả hàng
+                      </button>
+                    )}
                 </div>
               </div>
             ))}
