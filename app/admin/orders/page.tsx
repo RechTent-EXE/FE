@@ -10,14 +10,17 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/formatters";
-import { useCompletedOrders } from "@/hooks/useOrders";
-import { Order } from "@/types/payment";
+import { useRecentOrders } from "@/hooks/useAdminDashboard";
+import { RecentOrder } from "@/hooks/useAdminDashboard";
 
 export default function OrdersManagementPage() {
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<RecentOrder | null>(null);
 
   // Use hook for orders
-  const { orders, isLoading: loading, isError } = useCompletedOrders();
+  const { orders: allOrders, isLoading: loading, isError } = useRecentOrders();
+
+  // Filter only completed orders
+  const orders = allOrders.filter((order) => order.status === "completed");
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN", {
