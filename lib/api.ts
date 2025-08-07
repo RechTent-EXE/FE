@@ -199,4 +199,29 @@ export const clearTokens = () => {
   accessToken = null;
 };
 
+export interface RatingWithUser {
+  _id: string;
+  ratingId: string;
+  userId: string;
+  productId: string;
+  rating: number;
+  content: string;
+  user?: {
+    userId: string;
+    fullname: string;
+    avtUrl?: string;
+  };
+}
+
+export async function fetchRatings(): Promise<RatingWithUser[]> {
+  const res = await api.get("/product-ratings/with-user");
+
+  if (!res) {
+    throw new Error("Failed to fetch ratings");
+  }
+
+  console.log(res.data);
+  return res.data;
+}
+
 export default api;

@@ -1,33 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Star, User } from "lucide-react";
+import { fetchRatings, RatingWithUser } from "@/lib/api";
+
+function getRandomThree<T>(arr: T[]): T[] {
+  return arr.sort(() => 0.5 - Math.random()).slice(0, 3);
+}
 
 export default function TestimonialsSection() {
-  const testimonials = [
-    {
-      name: "Nguyễn Văn A",
-      role: "Nhiếp ảnh gia",
-      content:
-        "RechTent giúp tôi tiết kiệm rất nhiều chi phí khi cần thiết bị chuyên nghiệp cho dự án.",
-      rating: 5,
-      avatar: "",
-    },
-    {
-      name: "Trần Thị B",
-      role: "Content Creator",
-      content:
-        "Dịch vụ tuyệt vời, thiết bị chất lượng cao và giao hàng nhanh chóng.",
-      rating: 5,
-      avatar: "",
-    },
-    {
-      name: "Lê Minh C",
-      role: "Doanh nhân",
-      content:
-        "Thuê laptop cho team làm việc từ xa, rất tiện lợi và giá cả hợp lý.",
-      rating: 5,
-      avatar: "",
-    },
-  ];
+  const [testimonials, setTestimonials] = useState<RatingWithUser[]>([]);
+
+  useEffect(() => {
+    fetchRatings()
+      .then((ratings) => setTestimonials(getRandomThree(ratings)))
+      .catch((err) => {
+        console.error("Failed to fetch ratings:", err);
+      });
+  }, []);
 
   return (
     <section className="py-16 bg-gray-50">
@@ -56,17 +47,19 @@ export default function TestimonialsSection() {
                     />
                   ))}
                 </div>
+
                 <p className="text-gray-600 mb-6 italic">
-                  &ldquo;{testimonial.content}&rdquo;
+                  &ldquo;{testimonial.content || "Không có nhận xét."}&rdquo;
                 </p>
+
                 <div className="flex items-center">
-                  {testimonial.avatar ? (
+                  {testimonial.user?.avtUrl ? (
                     <Image
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
+                      src={testimonial.user.avtUrl}
+                      alt={testimonial.user.fullname || "User"}
                       width={48}
                       height={48}
-                      className="w-12 h-12 rounded-full mr-4"
+                      className="w-12 h-12 rounded-full mr-4 object-cover"
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
@@ -75,11 +68,9 @@ export default function TestimonialsSection() {
                   )}
                   <div>
                     <div className="font-semibold text-gray-900">
-                      {testimonial.name}
+                      {testimonial.user?.fullname || "Ẩn danh"}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {testimonial.role}
-                    </div>
+                    <div className="text-sm text-gray-600">Khách hàng</div>
                   </div>
                 </div>
               </div>
