@@ -74,8 +74,8 @@ export const returnService = {
     } catch (error) {
       // Fallback: try with direct fetch if axios fails
       const token = localStorage.getItem("accessToken");
-      // const directUrl = `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/return-request`;
-      const directUrl = buildApiUrl(`/orders/${orderId}/return-request`);
+      const directUrl = `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/return-request`;
+      // const directUrl = buildApiUrl(`/orders/${orderId}/return-request`);
 
       const fetchResponse = await fetch(directUrl, {
         method: "POST",
@@ -134,9 +134,3 @@ export const returnService = {
     return response.data;
   },
 };
-
-function buildApiUrl(path: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "";
-  const cleanedPath = path.replace(/^\/+/, ""); // remove leading slashes
-  return `${base}/${cleanedPath}`;
-}
