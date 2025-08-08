@@ -74,7 +74,7 @@ export const returnService = {
     } catch (error) {
       // Fallback: try with direct fetch if axios fails
       const token = localStorage.getItem("accessToken");
-      const directUrl = `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/return-request`;
+      const directUrl = `https://backend.rechtent.shop/orders/${orderId}/return-request`;
       // const directUrl = buildApiUrl(`/orders/${orderId}/return-request`);
 
       const fetchResponse = await fetch(directUrl, {
