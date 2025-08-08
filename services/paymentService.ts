@@ -307,8 +307,53 @@ class PaymentService {
       }
       return null;
     } catch (error) {
-      console.error("Failed to fetch cart:", error);
+      console.error("Failed to fetch cart of user " + userId + ": ", error);
       return null;
+    }
+  }
+
+  async createOrderDirectly(orderData: {
+    userId: string;
+    cartId: string;
+    total: number;
+    depositAmount: number;
+    depositPaidAt: string;
+    finalPaidAt: string;
+    status: string;
+  }): Promise<{ orderId: string; [key: string]: any }> {
+    try {
+      const response = await api.post("/orders", orderData);
+
+      if (!response.data) {
+        throw new Error("Không nhận được phản hồi từ server");
+      }
+
+      const orderId = response.data.orderId || response.data._id;
+      if (!orderId) {
+        throw new Error("Server không trả về mã đơn hàng (orderId)");
+      }
+
+      return {
+        ...response.data,
+        orderId,
+      };
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: {
+          data?: { message?: string };
+          status?: number;
+          statusText?: string;
+        };
+        message?: string;
+        request?: unknown;
+      };
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Không thể tạo đơn hàng trực tiếp. Vui lòng thử lại.";
+
+      throw new Error(errorMessage);
     }
   }
 }

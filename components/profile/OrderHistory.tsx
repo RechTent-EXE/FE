@@ -296,12 +296,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                               {product?.product.name ||
                                 `Sản phẩm ID: ${detail.productId}`}
                             </h4>
-                            <div className="flex items-center justify-between mt-2">
+                            <div className="flex flex-col items-start justify-between mt-2 space-y-1">
                               <p className="text-sm text-gray-600">
                                 Số lượng: {detail.quantity}
                               </p>
                               <p className="font-semibold text-lg">
-                                {formatCurrency(detail.totalPrice)}
+                                Tổng tiền: {formatCurrency(detail.totalPrice)}
                               </p>
                             </div>
                           </div>

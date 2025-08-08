@@ -72,6 +72,7 @@ export default function ProductDetailPage({
   const [ratings, setRatings] = useState<ProductRating[]>([]);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [productType, setProductType] = useState<ProductType | null>(null);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -80,7 +81,7 @@ export default function ProductDetailPage({
   const [isLiked, setIsLiked] = useState(false);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [tokenUserId, setTokenUserId] = useState<string | null>(null);
-  const { calculateRentalDays } = useCart();
+  const { calculateRentalDays, addToCart } = useCart();
   const [selectedDurationFromCard, setSelectedDurationFromCard] = useState<{
     days: number;
     discount: number;
@@ -90,6 +91,41 @@ export default function ProductDetailPage({
   const [isHighlightSummary, setIsHighlightSummary] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { profile } = useProfile();
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      alert("Vui lòng đăng nhập để thêm vào giỏ hàng");
+      return;
+    }
+
+    if (isAddingToCart) return;
+
+    try {
+      setIsAddingToCart(true);
+
+      // Validate date info
+      if (!startDate || !endDate) {
+        alert("Vui lòng chọn thời gian thuê trước khi thêm vào giỏ hàng");
+        return;
+      }
+
+      await addToCart({
+        productId: product.productId,
+        quantity,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
+      });
+
+      alert("Đã thêm sản phẩm vào giỏ hàng!");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert("Có lỗi xảy ra khi thêm vào giỏ hàng");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   // Get userId from token and selected duration from sessionStorage
   useEffect(() => {
@@ -322,18 +358,27 @@ export default function ProductDetailPage({
       }
 
       const cartId = await paymentService.getCartIdByUserId(user.id);
-      const order = await paymentService.createOrder({
+
+      await addToCart({
+        productId: product.productId,
+        quantity: quantityInt,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
+      });
+
+      const directOrder = await paymentService.createOrderDirectly({
         userId: user.id,
-        cartId: cartId ? cartId : "",
-        subtotal: orderData.subtotal,
-        discount: orderData.discount,
-        deposit: orderData.deposit,
-        total: orderData.total,
+        cartId: cartId || "",
+        total: discountInfo.totalPayment,
+        depositAmount: depositAmount,
+        depositPaidAt: new Date().toISOString(),
+        finalPaidAt: new Date().toISOString(),
+        status: "pending",
       });
 
       const paymentPayload = paymentService.preparePaymentData(
         orderData,
-        order.orderId,
+        directOrder.orderId,
         orderData.total
       );
 
@@ -384,7 +429,7 @@ export default function ProductDetailPage({
   const { product, images } = productData;
 
   const depositAmount = calculateDeposit(
-    product.actualPrice,
+    product.actualPrice * quantity,
     userProfile?.identityVerified || false
   );
 
@@ -835,7 +880,11 @@ export default function ProductDetailPage({
                         ? "🎉 Đặt thuê ngay với ưu đãi!"
                         : "Đặt thuê ngay"}
                     </button>
-                    <button className="w-full border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 py-4 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={!startDate || !endDate || !product.isAvailable}
+                      className="w-full border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 py-4 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                    >
                       <Truck size={20} />
                       Thêm vào giỏ hàng
                     </button>
