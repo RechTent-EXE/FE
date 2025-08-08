@@ -218,7 +218,7 @@ export default function OrderSummary({
             </div>
 
             <div className="flex justify-between text-orange-600 font-medium">
-              <span>Tổng tiền cọc</span>
+              <span>Tổng tiền cọc (-100%)</span>
               <span>{deposit.toLocaleString()}đ</span>
             </div>
 

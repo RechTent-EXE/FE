@@ -297,6 +297,20 @@ class PaymentService {
       throw new Error(errorMessage);
     }
   }
+
+  async getCartIdByUserId(userId: string): Promise<string | null> {
+    try {
+      const res = await api.get(`/carts/user/${userId}`);
+      const carts = await res.data;
+      if (Array.isArray(carts) && carts.length > 0) {
+        return carts[0].cartId;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to fetch cart:", error);
+      return null;
+    }
+  }
 }
 
 const paymentService = new PaymentService();

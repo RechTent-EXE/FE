@@ -24,6 +24,8 @@ import ProductImageGallery from "@/components/product-detail/product-image-galle
 import RentalDatePicker from "@/components/product-detail/rental-date-picker";
 import ProductTabs from "@/components/product-detail/product-tabs";
 import RelatedProducts from "@/components/product-detail/related-products";
+import paymentService from "@/services/paymentService";
+import { toast } from "react-hot-toast";
 import {
   ProductDetailResponse,
   UserProfile,
@@ -47,6 +49,10 @@ import {
   parseHtmlToArray,
   formatCurrency,
 } from "@/utils/productUtils";
+import { OrderData, OrderItem } from "@/types/payment";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useCart } from "@/hooks/useCart";
 
 export default function ProductDetailPage({
   params,
@@ -54,6 +60,7 @@ export default function ProductDetailPage({
   params: Promise<{ category: string; productId: string }>;
 }) {
   const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{
     category: string;
     productId: string;
@@ -73,6 +80,7 @@ export default function ProductDetailPage({
   const [isLiked, setIsLiked] = useState(false);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [tokenUserId, setTokenUserId] = useState<string | null>(null);
+  const { calculateRentalDays } = useCart();
   const [selectedDurationFromCard, setSelectedDurationFromCard] = useState<{
     days: number;
     discount: number;
@@ -80,6 +88,8 @@ export default function ProductDetailPage({
   } | null>(null);
   const [isHighlightButton, setIsHighlightButton] = useState(false);
   const [isHighlightSummary, setIsHighlightSummary] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { profile } = useProfile();
 
   // Get userId from token and selected duration from sessionStorage
   useEffect(() => {
@@ -249,15 +259,92 @@ export default function ProductDetailPage({
     }
   };
 
-  const handleRentNow = () => {
-    if (!userProfile?.identityVerified) {
-      router.push(
-        "/profile/verify-identity?redirect=" +
-          encodeURIComponent(window.location.pathname)
+  const handleRentNow = async () => {
+    if (!product || !startDate || !endDate || !isAuthenticated || !user) {
+      alert("Vui lòng nhập đầy đủ thông tin trước khi tiếp tục.");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+
+      const hasCompleteInfo =
+        profile?.fullname && profile?.phone && profile?.address;
+      if (!hasCompleteInfo) {
+        alert(
+          "Vui lòng cập nhật đầy đủ thông tin giao hàng trong trang profile trước khi thanh toán."
+        );
+        router.push("/profile");
+        return;
+      }
+
+      const rentalDays = calculateRentalDays(
+        startDate.toISOString(),
+        endDate.toISOString()
       );
-    } else {
-      alert("Tiến hành đặt thuê sản phẩm!");
-      // In a real app, you would redirect to checkout or add to cart
+      const quantityInt = parseInt(quantity.toString());
+      const unitPrice = product.singleDayPrice;
+      const actualPrice = discountInfo.finalPrice / rentalDays / quantityInt;
+
+      const orderItems: OrderItem[] = [
+        {
+          productId: product.productId,
+          productName: product.name,
+          quantity: quantityInt,
+          singleDayPrice: unitPrice,
+          actualPrice: actualPrice,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          totalPrice: discountInfo.totalPrice,
+          depositAmount,
+        },
+      ];
+
+      const orderData: OrderData = {
+        userId: user.id,
+        cartItems: orderItems,
+        subtotal: discountInfo.totalPrice,
+        discount: discountInfo.discountAmount,
+        deposit: depositAmount,
+        total: discountInfo.totalPayment,
+        shippingInfo: {
+          fullname: profile.fullname || "",
+          phone: profile.phone || "",
+          address: profile.address || "",
+        },
+        paymentMethod: "credit_card",
+        paymentType: "final",
+      };
+
+      const validation = paymentService.validatePaymentData(orderData);
+      if (!validation.isValid) {
+        throw new Error(validation.error || "Dữ liệu thanh toán không hợp lệ.");
+      }
+
+      const cartId = await paymentService.getCartIdByUserId(user.id);
+      const order = await paymentService.createOrder({
+        userId: user.id,
+        cartId: cartId ? cartId : "",
+        subtotal: orderData.subtotal,
+        discount: orderData.discount,
+        deposit: orderData.deposit,
+        total: orderData.total,
+      });
+
+      const paymentPayload = paymentService.preparePaymentData(
+        orderData,
+        order.orderId,
+        orderData.total
+      );
+
+      const paymentRes = await paymentService.createPayment(paymentPayload);
+
+      paymentService.redirectToPayOS(paymentRes.payosUrl);
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Đã xảy ra lỗi khi đặt thuê ngay.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -733,7 +820,10 @@ export default function ProductDetailPage({
                       }`}
                     >
                       <Calendar size={20} />
-                      {!startDate || !endDate || !product.isAvailable
+                      {!startDate ||
+                      !endDate ||
+                      !product.isAvailable ||
+                      isProcessing
                         ? `Chưa đủ thông tin ${
                             !startDate ? "(chưa có ngày bắt đầu)" : ""
                           } ${!endDate ? "(chưa có ngày kết thúc)" : ""} ${

@@ -492,7 +492,8 @@ export const useCart = () => {
   const calculateDeposit = (): number => {
     return cartItems.reduce((total, item) => {
       if (!item.actualPrice) return total;
-      return total + item.actualPrice * 0.3 * item.quantity;
+      // return total + item.actualPrice * 0.3 * item.quantity;
+      return 0; //đẫ chỉnh
     }, 0);
   };
 
