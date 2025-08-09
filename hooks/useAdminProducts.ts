@@ -8,7 +8,7 @@ export interface ProductStats {
   lowStockProducts: number;
   outOfStockProducts: number;
   totalCategories: number;
-  averageRating: number;
+  avgRating: number;
   totalReviews: number;
 }
 

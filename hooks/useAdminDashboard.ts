@@ -3,12 +3,14 @@ import api from "@/lib/api";
 
 // Types for admin dashboard data
 export interface DashboardOverview {
-  totalRevenue: number;
+  totalUsers: number;
   totalOrders: number;
   totalProducts: number;
-  dailyRevenue: number;
-  monthlyRevenue: number;
-  monthlyOrders: number;
+  totalPayments: number;
+  revenueThisMonth: number;
+  ordersPending: number;
+  ordersCompleted: number;
+  activeRentals: number;
 }
 
 export interface RecentOrder {
@@ -18,20 +20,22 @@ export interface RecentOrder {
   cartId: string;
   total: number;
   depositAmount: number;
-  status: string;
-  createdAt: string;
+  status: string; // e.g. 'pending', 'deposit_paid', 'completed', etc.
+  depositPaidAt?: string; // ISO string or undefined
+  finalPaidAt?: string; // ISO string or undefined
+  createdAt: string; // ISO string
   __v: number;
-  depositPaidAt?: string;
-  returnRequest?: {
-    photos: string[];
-    bankName: string;
-    bankAccountNumber: string;
-    bankAccountHolder: string;
-    submittedAt: string;
-    verified: boolean;
-    isHidden: boolean;
-  };
-  finalPaidAt?: string;
+  returnRequest?: ReturnRequest;
+}
+
+export interface ReturnRequest {
+  photos: string[];
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+  submittedAt: string; // ISO string datetime
+  verified: boolean;
+  isHidden: boolean;
 }
 
 export interface TopRatedProduct {
@@ -91,6 +95,21 @@ export function useRecentOrders() {
   const { data, error, isLoading, mutate } = useSWR<RecentOrder[]>(
     "/admin/orders/recent",
     () => api.get("/admin/orders/recent").then((res) => res.data)
+  );
+
+  return {
+    orders: data || [],
+    isLoading,
+    isError: !!error,
+    error,
+    refresh: mutate,
+  };
+}
+
+export function useOrders() {
+  const { data, error, isLoading, mutate } = useSWR<RecentOrder[]>(
+    "/orders",
+    () => api.get("/orders").then((res) => res.data)
   );
 
   return {

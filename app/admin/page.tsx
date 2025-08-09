@@ -29,20 +29,20 @@ export default function AdminDashboard() {
   );
 
   // Use admin hooks
-  const { isLoading: dashboardLoading } = useDashboardOverview();
+  const { isLoading: dashboardLoading, data: dashboardData } =
+    useDashboardOverview();
   const { orders: allOrders, isLoading: ordersLoading } = useRecentOrders();
   const { data: userStats, isLoading: userStatsLoading } = useUserStats();
   const { data: productStats, isLoading: productStatsLoading } =
     useProductStats();
 
   // Filter only completed orders
-  const orders = allOrders.filter((order) => order.status === "completed");
+  const orders = allOrders.filter(
+    (order) => order.status === "completed" || order.status === "deposit_paid"
+  );
 
   // Calculate revenue from completed orders
-  const totalRevenue = orders.reduce(
-    (sum, order) => sum + (order.total - order.depositAmount),
-    0
-  );
+  const totalRevenue = dashboardData?.revenueThisMonth || 0;
   const dailyRevenue = totalRevenue > 0 ? Math.round(totalRevenue / 30) : 0; // Simple daily calculation
 
   // Pagination
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng đơn hàng</p>
               <p className="text-3xl font-bold text-blue-600">
-                {loading ? "..." : orders.length}
+                {loading ? "..." : dashboardData?.totalOrders || 0}
               </p>
             </div>
             <div className="bg-blue-50 p-3 rounded-lg">
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng sản phẩm</p>
               <p className="text-3xl font-bold text-indigo-600">
-                {loading ? "..." : productStats?.totalProducts || 0}
+                {loading ? "..." : dashboardData?.totalProducts || 0}
               </p>
             </div>
             <div className="bg-indigo-50 p-3 rounded-lg">
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
                 Tổng người dùng
               </p>
               <p className="text-2xl font-bold text-orange-600">
-                {loading ? "..." : userStats?.totalUsers || 0}
+                {loading ? "..." : dashboardData?.totalUsers || 0}
               </p>
             </div>
             <div className="bg-orange-50 p-3 rounded-lg">
@@ -188,9 +188,7 @@ export default function AdminDashboard() {
                 Đánh giá trung bình
               </p>
               <p className="text-2xl font-bold text-yellow-600">
-                {loading
-                  ? "..."
-                  : (productStats?.averageRating || 0).toFixed(1)}
+                {loading ? "..." : (productStats?.avgRating || 0).toFixed(1)}
               </p>
             </div>
             <div className="bg-yellow-50 p-3 rounded-lg">
@@ -289,6 +287,8 @@ export default function AdminDashboard() {
                     <span className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full font-medium">
                       {order.status === "completed"
                         ? "Đã hoàn thành"
+                        : order.status === "deposit_paid"
+                        ? "Đã thanh toán"
                         : order.status}
                     </span>
                   </div>

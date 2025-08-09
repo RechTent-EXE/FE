@@ -8,19 +8,38 @@ import {
   User,
   Package,
   CheckCircle,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/formatters";
-import { useRecentOrders } from "@/hooks/useAdminDashboard";
+import { useOrders } from "@/hooks/useAdminDashboard";
 import { RecentOrder } from "@/hooks/useAdminDashboard";
+
+const ORDERS_PER_PAGE = 5;
 
 export default function OrdersManagementPage() {
   const [selectedOrder, setSelectedOrder] = useState<RecentOrder | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Use hook for orders
-  const { orders: allOrders, isLoading: loading, isError } = useRecentOrders();
+  const { orders: allOrders, isLoading: loading, isError } = useOrders();
 
-  // Filter only completed orders
-  const orders = allOrders.filter((order) => order.status === "completed");
+  const sortedOrders = [...allOrders].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  // Pagination calculations
+  const totalOrdersCount = allOrders.length;
+  const totalPages = Math.ceil(totalOrdersCount / ORDERS_PER_PAGE);
+
+  const paginatedOrders = sortedOrders.slice(
+    (currentPage - 1) * ORDERS_PER_PAGE,
+    currentPage * ORDERS_PER_PAGE
+  );
+
+  const completedOrders = allOrders.filter(
+    (order) => order.status === "completed"
+  );
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN", {
@@ -39,6 +58,27 @@ export default function OrdersManagementPage() {
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             <CheckCircle className="w-3 h-3 mr-1" />
             Hoàn thành
+          </span>
+        );
+      case "deposit_paid":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <CreditCard className="w-3 h-3 mr-1" />
+            Đã trả tiền
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <XCircle className="w-3 h-3 mr-1" />
+            Đã hủy
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <Clock className="w-3 h-3 mr-1" />
+            Đang chờ
           </span>
         );
       default:
@@ -76,16 +116,22 @@ export default function OrdersManagementPage() {
     );
   }
 
+  // Pagination controls
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý đơn hàng</h1>
         <div className="text-sm text-gray-600">
-          Tổng: {orders.length} đơn hàng hoàn thành
+          Tổng: {completedOrders.length}/{totalOrdersCount} đơn hàng hoàn thành
         </div>
       </div>
 
-      {orders.length === 0 ? (
+      {totalOrdersCount === 0 ? (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="text-gray-400 mb-4">
             <Package className="w-16 h-16 mx-auto" />
@@ -99,7 +145,7 @@ export default function OrdersManagementPage() {
         </div>
       ) : (
         <div className="grid gap-6">
-          {orders.map((order) => (
+          {paginatedOrders.map((order) => (
             <div
               key={order._id}
               className="bg-white rounded-lg shadow-sm border border-gray-200"
@@ -168,25 +214,61 @@ export default function OrdersManagementPage() {
 
                 {/* Return Request Info */}
                 {order.returnRequest && (
-                  <div className="mt-4 bg-orange-50 rounded-lg p-4">
-                    <h4 className="font-medium text-orange-900 mb-2">
+                  <div
+                    className={`mt-4 rounded-lg p-4 ${
+                      order.returnRequest.verified
+                        ? "bg-green-50 border border-green-300"
+                        : "bg-yellow-50 border border-yellow-300"
+                    }`}
+                  >
+                    <h4
+                      className={`font-medium mb-2 ${
+                        order.returnRequest.verified
+                          ? "text-green-900"
+                          : "text-yellow-900"
+                      }`}
+                    >
                       Yêu cầu trả hàng
                     </h4>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <span className="text-orange-700">Ngân hàng:</span>
+                        <span
+                          className={`${
+                            order.returnRequest.verified
+                              ? "text-green-700"
+                              : "text-yellow-700"
+                          }`}
+                        >
+                          Ngân hàng:
+                        </span>
                         <p className="font-medium">
                           {order.returnRequest.bankName}
                         </p>
                       </div>
                       <div>
-                        <span className="text-orange-700">Số tài khoản:</span>
+                        <span
+                          className={`${
+                            order.returnRequest.verified
+                              ? "text-green-700"
+                              : "text-yellow-700"
+                          }`}
+                        >
+                          Số tài khoản:
+                        </span>
                         <p className="font-medium">
                           {order.returnRequest.bankAccountNumber}
                         </p>
                       </div>
                       <div>
-                        <span className="text-orange-700">Trạng thái:</span>
+                        <span
+                          className={`${
+                            order.returnRequest.verified
+                              ? "text-green-700"
+                              : "text-yellow-700"
+                          }`}
+                        >
+                          Trạng thái:
+                        </span>
                         <p className="font-medium">
                           {order.returnRequest.verified
                             ? "Đã phê duyệt"
@@ -202,6 +284,54 @@ export default function OrdersManagementPage() {
         </div>
       )}
 
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-3 mt-6">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded border ${
+              currentPage === 1
+                ? "cursor-not-allowed border-gray-300 text-gray-400"
+                : "border-blue-600 text-blue-600 hover:bg-blue-100"
+            }`}
+          >
+            Previous
+          </button>
+
+          {/* Show page numbers */}
+          {[...Array(totalPages)].map((_, idx) => {
+            const pageNum = idx + 1;
+            return (
+              <button
+                key={pageNum}
+                onClick={() => goToPage(pageNum)}
+                className={`px-3 py-1 rounded border ${
+                  currentPage === pageNum
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded border ${
+              currentPage === totalPages
+                ? "cursor-not-allowed border-gray-300 text-gray-400"
+                : "border-blue-600 text-blue-600 hover:bg-blue-100"
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {/* Detail Modal */}
       {/* Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -217,6 +347,7 @@ export default function OrdersManagementPage() {
                 <button
                   onClick={() => setSelectedOrder(null)}
                   className="text-gray-400 hover:text-gray-600"
+                  aria-label="Close modal"
                 >
                   <svg
                     className="w-6 h-6"

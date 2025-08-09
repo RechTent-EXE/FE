@@ -47,11 +47,9 @@ export function useLatestUsers() {
 // Hook để lấy user stats
 export function useUserStats() {
   const { data, error, isLoading, mutate } = useSWR<{
-    totalUsers: number;
-    verifiedUsers: number;
-    bannedUsers: number;
-    faceVerifiedUsers: number;
-    monthlyNewUsers: number;
+    totalActiveUsers: number;
+    totalInactiveUsers: number;
+    usersWithActiveCarts: number;
   }>("/admin/users/stats", () =>
     api.get("/admin/users/stats").then((res) => res.data)
   );
