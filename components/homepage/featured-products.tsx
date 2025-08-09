@@ -10,10 +10,12 @@ import {
 } from "@/lib/api/products";
 import { transformProductData } from "@/utils/productUtils";
 import { RentedProduct, ProductType, Brand } from "@/types/product";
+import { useRouter } from "next/navigation";
 
 export default function FeaturedProducts() {
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
@@ -205,7 +207,11 @@ export default function FeaturedProducts() {
                     </span>
                   </div>
                   <button
-                    onClick={(e) => e.preventDefault()}
+                    onClick={() =>
+                      router.push(
+                        `/products/${product.type.toLowerCase()}/${product.id}`
+                      )
+                    }
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                   >
                     Thuê ngay

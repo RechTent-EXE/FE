@@ -228,7 +228,7 @@ export default function ProductCard({
                 )}
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={handleProductClick}
                   disabled={!product.isAvailable}
                 >
                   Thuê ngay
@@ -359,7 +359,7 @@ export default function ProductCard({
             )}
             <button
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
-              onClick={(e) => e.stopPropagation()}
+              onClick={handleProductClick}
               disabled={!product.isAvailable}
             >
               Thuê ngay

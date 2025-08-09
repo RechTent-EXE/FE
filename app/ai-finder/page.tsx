@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Sparkles, Send, Loader2, Link } from "lucide-react";
 import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function AIFinderPage() {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const router = useRouter();
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -19,6 +21,10 @@ export default function AIFinderPage() {
       const res = await api.post("/ai/recommend", { query });
 
       const products = res.data;
+      // console.log(
+      //   "Product: ",
+      //   products.filter((product: any) => product.match > 0)
+      // );
       setSuggestions(products.filter((product: any) => product.match > 0)); //match = 0 thì cút
     } catch (err) {
       console.error("Recommendation failed:", err);
@@ -112,6 +118,9 @@ export default function AIFinderPage() {
               {suggestions.map((product) => (
                 <div
                   key={product.productId}
+                  // href={`/products/${product.type.toLowerCase()}/${
+                  //   product.productId
+                  // }`}
                   className="border-2 border-blue-100 hover:border-blue-200 transition-colors bg-white rounded-lg shadow-lg"
                 >
                   <div className="p-6">
@@ -152,10 +161,26 @@ export default function AIFinderPage() {
                             <span className="text-gray-500 ml-1">/ ngày</span>
                           </div>
                           <div className="flex gap-3">
-                            <button className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors">
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/products/${product.type.toLowerCase()}/${
+                                    product.productId
+                                  }`
+                                )
+                              }
+                              className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors"
+                            >
                               Xem chi tiết
                             </button>
                             <button
+                              onClick={() =>
+                                router.push(
+                                  `/products/${product.type.toLowerCase()}/${
+                                    product.productId
+                                  }`
+                                )
+                              }
                               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                               disabled={!product.isAvailable}
                             >
