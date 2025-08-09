@@ -15,8 +15,9 @@ import {
 import UserProfile from "@/components/auth/UserProfile";
 import { useCart } from "@/hooks/useCart";
 import { useFavourites } from "@/hooks/useFavourites";
-import { Product, ProductCardData } from "@/types/product";
+import { ProductCardData } from "@/types/product";
 import { fetchRentedProductsByName } from "@/lib/api/products";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -28,6 +29,7 @@ export default function Header() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<ProductCardData[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const { isAdmin } = useAdmin();
 
   // Force re-render when cartItems or favourites change
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -219,6 +221,19 @@ export default function Header() {
               </span>
             </Link>
 
+            {/* Admin Tab - only for admins */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="relative px-4 py-2 rounded-full text-gray-700 hover:text-green-600 font-medium transition-all duration-200 hover:bg-green-50 group"
+              >
+                <span className="relative">
+                  Admin
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-green-600 to-emerald-600 group-hover:w-full transition-all duration-300"></span>
+                </span>
+              </Link>
+            )}
+
             <Link
               href="/ai-finder"
               className="relative px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:shadow-lg hover:scale-105 transition-all duration-200 group"
@@ -356,6 +371,20 @@ export default function Header() {
                 >
                   Tin tức
                 </Link>
+
+                {/* Admin Tab - only for admins */}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="relative px-4 py-2 rounded-full text-gray-700 hover:text-green-600 font-medium transition-all duration-200 hover:bg-green-50 group"
+                  >
+                    <span className="relative">
+                      Admin
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-green-600 to-emerald-600 group-hover:w-full transition-all duration-300"></span>
+                    </span>
+                  </Link>
+                )}
+
                 <Link
                   href="/ai-finder"
                   className="block px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium"

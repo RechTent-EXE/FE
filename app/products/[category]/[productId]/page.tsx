@@ -428,17 +428,18 @@ export default function ProductDetailPage({
 
   const { product, images } = productData;
 
-  const depositAmount = calculateDeposit(
-    product.actualPrice * quantity,
-    userProfile?.identityVerified || false
-  );
+  const depositAmount =
+    calculateDeposit(
+      product.actualPrice * quantity,
+      userProfile?.identityVerified || false
+    ) * 0; //đã chỉnh
 
   // Calculate discount info based on current rental days
   const discountInfo = calculateRentalDiscount(
     product.singleDayPrice,
     rentalDays,
     quantity,
-    product.actualPrice,
+    product.actualPrice * 0, //đã chỉnh
     userProfile?.identityVerified || false
   );
 
@@ -817,10 +818,11 @@ export default function ProductDetailPage({
                       )}
                     </div>
                     <div className="flex justify-between text-lg font-bold text-orange-600">
-                      <span>
+                      {/* <span>
                         Tiền cọc (
                         {userProfile?.identityVerified ? "30%" : "100%"}):
-                      </span>
+                      </span> đã chỉnh*/}
+                      <span>Tiền cọc (-100%):</span>
                       <span>{formatCurrency(depositAmount)}</span>
                     </div>
                     <div className="border-t pt-3">
