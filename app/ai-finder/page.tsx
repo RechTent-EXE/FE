@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Send, Loader2, Link } from "lucide-react";
+import { Sparkles, Send, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 
@@ -21,10 +21,6 @@ export default function AIFinderPage() {
       const res = await api.post("/ai/recommend", { query });
 
       const products = res.data;
-      // console.log(
-      //   "Product: ",
-      //   products.filter((product: any) => product.match > 0)
-      // );
       setSuggestions(products.filter((product: any) => product.match > 0)); //match = 0 thì cút
     } catch (err) {
       console.error("Recommendation failed:", err);

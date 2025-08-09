@@ -15,6 +15,8 @@ import {
 import UserProfile from "@/components/auth/UserProfile";
 import { useCart } from "@/hooks/useCart";
 import { useFavourites } from "@/hooks/useFavourites";
+import { Product, ProductCardData } from "@/types/product";
+import { fetchRentedProductsByName } from "@/lib/api/products";
 
 export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -23,6 +25,9 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const { cartItems } = useCart();
   const { favourites } = useFavourites();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<ProductCardData[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Force re-render when cartItems or favourites change
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -35,6 +40,51 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await fetchRentedProductsByName(searchTerm);
+
+        // Map API shape (RentedProduct) → ProductCardData
+        const mapped: ProductCardData[] = results.map((item) => ({
+          id: item.product.productId,
+          name: item.product.name,
+          type: item.product.typeId,
+          rating: item.product.rating,
+          brand: item.product.brandId,
+          description: item.product.description,
+          isVerified: item.product.isVerified,
+          isAvailable: item.product.isAvailable,
+          actualPrice: item.product.actualPrice,
+          singleDayPrice: item.product.singleDayPrice,
+          image: item.images[0]?.imageUrl || "",
+          durations: item.durations.map((d) => ({
+            duration: d.duration,
+            price: d.price,
+            discount: 0,
+          })),
+        }));
+
+        console.log(mapped);
+        setSearchResults(mapped);
+
+        // setSearchResults(results);
+      } catch (error) {
+        console.error("Search failed", error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // debounce 300ms
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -181,12 +231,61 @@ export default function Header() {
           {/* Search & Actions */}
           <div className="flex items-center space-x-3">
             {/* Search */}
-            <div className="hidden md:flex items-center space-x-2 bg-gray-100/80 backdrop-blur-sm rounded-full px-4 py-2 max-w-sm hover:bg-gray-100 transition-colors group">
+            <div className="relative hidden md:flex items-center space-x-2 bg-gray-100/80 backdrop-blur-sm rounded-full px-4 py-2 max-w-sm hover:bg-gray-100 transition-colors group">
               <Search className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
               <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tìm kiếm sản phẩm..."
                 className="border-0 bg-transparent outline-none flex-1 placeholder:text-gray-500"
               />
+
+              {/* Dropdown */}
+              {(searchResults.length > 0 ||
+                (!isSearching && searchTerm.trim())) && (
+                <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-50 animate-fadeIn">
+                  <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+                    {searchResults.length > 0 ? (
+                      searchResults.map((product) => (
+                        <li key={product.id}>
+                          <Link
+                            href={`/products/${product.type.toLowerCase()}/${
+                              product.id
+                            }`}
+                            className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors duration-150"
+                            onClick={() => {
+                              setSearchTerm("");
+                              setSearchResults([]);
+                            }}
+                          >
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-gray-200">
+                              <img
+                                src={product.image}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <span className="text-gray-700 font-medium truncate">
+                              {product.name}
+                            </span>
+                          </Link>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="px-4 py-3 text-gray-500 text-sm text-center">
+                        Không tìm thấy sản phẩm
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* Loading state */}
+              {isSearching && (
+                <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-4 text-sm text-gray-500">
+                  Đang tìm kiếm...
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

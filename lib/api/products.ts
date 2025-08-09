@@ -7,6 +7,7 @@ import {
   CreateProductRating,
   UserProfile,
   Product,
+  ProductCardData,
 } from "@/types/product";
 import api from "../api";
 import { getUserIdFromToken } from "../auth-utils";
@@ -296,5 +297,22 @@ export const fetchProductsByBrand = async (
     return response.data;
   } catch {
     throw new Error("Failed to fetch products by brand");
+  }
+};
+
+// Fetch rented products by product name (search)
+export const fetchRentedProductsByName = async (
+  query: string
+): Promise<RentedProduct[]> => {
+  try {
+    if (!query || query.trim() === "") {
+      return [];
+    }
+    const response = await api.get(
+      `/rented-products/search/${encodeURIComponent(query)}`
+    );
+    return response.data;
+  } catch {
+    throw new Error("Failed to search rented products by name");
   }
 };
