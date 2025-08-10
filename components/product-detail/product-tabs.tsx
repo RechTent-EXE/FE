@@ -6,6 +6,7 @@ import { ProductRating, CreateProductRating } from "@/types/product";
 import { calculateAverageRating } from "@/utils/productUtils";
 import { getFullNameFromToken, getUserIdFromToken } from "@/lib/auth-utils";
 import ProductRatingForm from "./product-rating-form";
+import userService from "@/services/userService";
 
 interface ProductTabsProps {
   description: string;
@@ -32,6 +33,9 @@ export default function ProductTabs({
   );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [reviewerNames, setReviewerNames] = useState<Record<string, string>>(
+    {}
+  );
 
   const averageRating = calculateAverageRating(ratings);
   const reviewCount = ratings.length;
@@ -47,6 +51,32 @@ export default function ProductTabs({
     setCurrentUserFullName(fullName);
     setCurrentUserId(userId);
   }, []);
+
+  useEffect(() => {
+    async function fetchReviewerNames() {
+      const uniqueIds = Array.from(new Set(ratings.map((r) => r.userId)));
+
+      const namesMap: Record<string, string> = {};
+      await Promise.all(
+        uniqueIds.map(async (uid) => {
+          try {
+            const userData = await userService.getUserById(uid);
+            namesMap[uid] = userData.fullname || `User ${uid.slice(0, 8)}`;
+          } catch {
+            namesMap[uid] = `User ${uid.slice(0, 8)}...`;
+          }
+        })
+      );
+      setReviewerNames(namesMap);
+    }
+
+    if (ratings.length) {
+      fetchReviewerNames();
+    }
+    if (currentUserId) {
+      setCurrentUserFullName(reviewerNames[currentUserId]);
+    }
+  }, [ratings, currentUserId]);
 
   // Calculate rating distribution
   const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
@@ -224,7 +254,8 @@ export default function ProductTabs({
                             {rating.userId === currentUserId &&
                             currentUserFullName
                               ? currentUserFullName
-                              : `User ${rating.userId.slice(0, 20)}...`}
+                              : reviewerNames[rating.userId] ||
+                                `User ${rating.userId.slice(0, 8)}...`}
                           </div>
                           <div className="text-gray-500 text-sm">
                             {rating.createdAt && formatDate(rating.createdAt)}
