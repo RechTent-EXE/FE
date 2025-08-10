@@ -12,7 +12,7 @@ interface OrderHistoryProps {
   reloadTrigger?: number;
 }
 
-type TabType = "paid" | "cancelled" | "returned";
+type TabType = "paid" | "cancelled" | "returned" | "pending";
 
 const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
   const { user } = useAuth();
@@ -27,10 +27,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  // Fetch payment history
   const fetchPaymentHistory = async () => {
     if (!user?.id) return;
-
     setLoading(true);
     try {
       const data = await paymentService.getUserPaymentHistory(user.id);
@@ -42,14 +40,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
     }
   };
 
-  // Fetch order details and products
   const fetchOrderDetails = async (orderId: string) => {
     setDetailsLoading(true);
     try {
       const details = await paymentService.getOrderDetails(orderId);
       setOrderDetails(details);
 
-      // Fetch product details for each order item
       const products: Record<string, RentedProduct> = {};
       for (const detail of details) {
         try {
@@ -72,7 +68,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
     fetchPaymentHistory();
   }, [user?.id, reloadTrigger]);
 
-  // Filter payments by status
   const getPaidPayments = () =>
     payments.filter(
       (p) => p.status === "paid" && p.orderStatus !== "completed"
@@ -81,6 +76,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
     payments.filter((p) => p.status === "cancelled");
   const getReturnedPayments = () =>
     payments.filter((p) => p.orderStatus === "completed");
+  const getPendingPayments = () =>
+    payments.filter((p) => p.status === "pending");
 
   const getCurrentPayments = () => {
     switch (activeTab) {
@@ -90,6 +87,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
         return getCancelledPayments();
       case "returned":
         return getReturnedPayments();
+      case "pending":
+        return getPendingPayments();
       default:
         return [];
     }
@@ -116,11 +115,22 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
     router.push(`/return-request/${orderId}`);
   };
 
+  const handleContinuePayment = (payosUrl: string) => {
+    if (payosUrl) {
+      window.location.href = payosUrl;
+    }
+  };
+
   const tabs = [
     {
       key: "paid" as TabType,
       label: "Đã thanh toán",
       count: getPaidPayments().length,
+    },
+    {
+      key: "pending" as TabType,
+      label: "Chờ thanh toán",
+      count: getPendingPayments().length,
     },
     {
       key: "cancelled" as TabType,
@@ -196,6 +206,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                           ? "bg-green-100 text-green-800"
                           : payment.status === "cancelled"
                           ? "bg-red-100 text-red-800"
+                          : payment.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
@@ -205,6 +217,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                         ? "Đã thanh toán"
                         : payment.status === "cancelled"
                         ? "Đã hủy"
+                        : payment.status === "pending"
+                        ? "Chờ thanh toán"
                         : "Chờ xử lý"}
                     </span>
                   </div>
@@ -227,6 +241,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                         Trả hàng
                       </button>
                     )}
+
+                  {activeTab === "pending" && payment.payosUrl && (
+                    <button
+                      onClick={() => handleContinuePayment(payment.payosUrl)}
+                      className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-colors"
+                    >
+                      Tiếp tục thanh toán
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -281,7 +304,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                         className="border border-gray-200 rounded-lg p-4 bg-gray-50"
                       >
                         <div className="flex items-start space-x-4">
-                          {/* Product Image */}
                           {product?.images && product.images[0] && (
                             <img
                               src={product.images[0].imageUrl}
@@ -289,8 +311,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
                               className="w-16 h-16 object-cover rounded-lg"
                             />
                           )}
-
-                          {/* Product Info */}
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-gray-900 truncate">
                               {product?.product.name ||
