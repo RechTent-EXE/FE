@@ -122,7 +122,7 @@ export default function LoginPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-white to-pink-200 rounded-2xl blur-sm opacity-60"></div>
                 <div className="relative w-12 h-12 bg-gradient-to-br from-white via-pink-50 to-pink-200 rounded-2xl flex items-center justify-center shadow-lg border border-pink-100/50">
                   <Image
-                    src="/placeholder.svg?height=28&width=28"
+                    src="/images/logo.png"
                     alt="RechTent Logo"
                     width={28}
                     height={28}
