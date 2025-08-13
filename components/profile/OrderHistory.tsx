@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import paymentService from "../../services/paymentService";
 import { fetchProductDetail } from "../../lib/api/products";
-import { PaymentHistory, OrderDetail } from "../../types/payment";
+import { PaymentHistory, OrderDetail, Order } from "../../types/payment";
 import { RentedProduct } from "../../types/product";
 
 interface OrderHistoryProps {
@@ -26,6 +26,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
   >({});
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [ordersMap, setOrdersMap] = useState<Record<string, Order>>({}); // store order data keyed by orderId
 
   const fetchPaymentHistory = async () => {
     if (!user?.id) return;
@@ -33,6 +34,20 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
     try {
       const data = await paymentService.getUserPaymentHistory(user.id);
       setPayments(data);
+
+      // Fetch orders for each payment
+      const ordersData: Record<string, Order> = {};
+      await Promise.all(
+        data.map(async (payment) => {
+          try {
+            const order = await paymentService.getOrderById(payment.orderId);
+            ordersData[payment.orderId] = order;
+          } catch (err) {
+            console.error(`Failed to fetch order ${payment.orderId}`, err);
+          }
+        })
+      );
+      setOrdersMap(ordersData);
     } catch (error) {
       console.error("Failed to fetch payment history:", error);
     } finally {
@@ -180,79 +195,90 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ reloadTrigger }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {getCurrentPayments().map((payment) => (
-              <div
-                key={payment._id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      Đơn hàng #{payment.orderCode}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {formatDate(payment.paidAt)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-lg text-gray-900">
-                      {formatCurrency(payment.amount)}
-                    </p>
-                    <span
-                      className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                        payment.orderStatus === "completed"
-                          ? "bg-blue-100 text-blue-800"
-                          : payment.status === "paid"
-                          ? "bg-green-100 text-green-800"
-                          : payment.status === "cancelled"
-                          ? "bg-red-100 text-red-800"
-                          : payment.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {payment.orderStatus === "completed"
-                        ? "Đã trả"
-                        : payment.status === "paid"
-                        ? "Đã thanh toán"
-                        : payment.status === "cancelled"
-                        ? "Đã hủy"
-                        : payment.status === "pending"
-                        ? "Chờ thanh toán"
-                        : "Chờ xử lý"}
-                    </span>
-                  </div>
-                </div>
+            {getCurrentPayments().map((payment) => {
+              const order = ordersMap[payment.orderId];
+              const hasReturnRequest =
+                order?.returnRequest && order.returnRequest.verified === false;
 
-                <div className="flex justify-between items-center">
-                  <button
-                    onClick={() => fetchOrderDetails(payment.orderId)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    Xem chi tiết
-                  </button>
-
-                  {activeTab === "paid" &&
-                    payment.orderStatus !== "completed" && (
-                      <button
-                        onClick={() => handleReturnOrder(payment.orderId)}
-                        className="px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
+              return (
+                <div
+                  key={payment._id}
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        Đơn hàng #{payment.orderCode}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {formatDate(payment.paidAt)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-lg text-gray-900">
+                        {formatCurrency(payment.amount)}
+                      </p>
+                      <span
+                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                          hasReturnRequest
+                            ? "bg-purple-100 text-purple-800"
+                            : payment.orderStatus === "completed"
+                            ? "bg-blue-100 text-blue-800"
+                            : payment.status === "paid"
+                            ? "bg-green-100 text-green-800"
+                            : payment.status === "cancelled"
+                            ? "bg-red-100 text-red-800"
+                            : payment.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
                       >
-                        Trả hàng
+                        {hasReturnRequest
+                          ? "Đang chờ duyệt"
+                          : payment.orderStatus === "completed"
+                          ? "Đã trả tiền"
+                          : payment.status === "paid"
+                          ? "Đã thanh toán"
+                          : payment.status === "cancelled"
+                          ? "Đã hủy"
+                          : payment.status === "pending"
+                          ? "Chờ thanh toán"
+                          : "Chờ xử lý"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <button
+                      onClick={() => fetchOrderDetails(payment.orderId)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      Xem chi tiết
+                    </button>
+
+                    {activeTab === "paid" &&
+                      payment.orderStatus !== "completed" &&
+                      !hasReturnRequest && (
+                        <button
+                          onClick={() => handleReturnOrder(payment.orderId)}
+                          className="px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
+                        >
+                          Trả hàng
+                        </button>
+                      )}
+
+                    {activeTab === "pending" && payment.payosUrl && (
+                      <button
+                        onClick={() => handleContinuePayment(payment.payosUrl)}
+                        className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-colors"
+                      >
+                        Tiếp tục thanh toán
                       </button>
                     )}
-
-                  {activeTab === "pending" && payment.payosUrl && (
-                    <button
-                      onClick={() => handleContinuePayment(payment.payosUrl)}
-                      className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-colors"
-                    >
-                      Tiếp tục thanh toán
-                    </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ import {
   CreateOrderResponse,
   PaymentHistory,
   OrderDetail,
+  Order,
 } from "../types/payment";
 
 class PaymentService {
@@ -293,6 +294,25 @@ class PaymentService {
         axiosError.response?.data?.message ||
         axiosError.message ||
         "Không thể lấy chi tiết đơn hàng.";
+
+      throw new Error(errorMessage);
+    }
+  }
+
+  async getOrderById(orderId: string): Promise<Order> {
+    try {
+      const response = await api.get(`/orders/${orderId}`);
+      return response.data;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        "Không thể lấy đơn hàng.";
 
       throw new Error(errorMessage);
     }

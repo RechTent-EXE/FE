@@ -20,6 +20,7 @@ const ORDERS_PER_PAGE = 5;
 export default function OrdersManagementPage() {
   const [selectedOrder, setSelectedOrder] = useState<RecentOrder | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterStatus, setFilterStatus] = useState("all");
 
   // Use hook for orders
   const { orders: allOrders, isLoading: loading, isError } = useOrders();
@@ -28,11 +29,17 @@ export default function OrdersManagementPage() {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // ✅ Filter orders by status
+  const filteredOrders =
+    filterStatus === "all"
+      ? sortedOrders
+      : sortedOrders.filter((order) => order.status === filterStatus);
+
   // Pagination calculations
-  const totalOrdersCount = allOrders.length;
+  const totalOrdersCount = filteredOrders.length;
   const totalPages = Math.ceil(totalOrdersCount / ORDERS_PER_PAGE);
 
-  const paginatedOrders = sortedOrders.slice(
+  const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * ORDERS_PER_PAGE,
     currentPage * ORDERS_PER_PAGE
   );
@@ -124,10 +131,28 @@ export default function OrdersManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý đơn hàng</h1>
-        <div className="text-sm text-gray-600">
-          Tổng: {completedOrders.length}/{totalOrdersCount} đơn hàng hoàn thành
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-600">
+            Tổng: {completedOrders.length}/{allOrders.length} đơn hàng hoàn
+            thành
+          </div>
+          {/* ✅ Status filter dropdown */}
+          <select
+            value={filterStatus}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1); // Reset to first page when filter changes
+            }}
+            className="border rounded-lg px-3 py-1 text-sm"
+          >
+            <option value="all">Tất cả</option>
+            <option value="completed">Hoàn thành</option>
+            <option value="deposit_paid">Đã trả tiền</option>
+            <option value="pending">Đang chờ</option>
+            <option value="cancelled">Đã hủy</option>
+          </select>
         </div>
       </div>
 
