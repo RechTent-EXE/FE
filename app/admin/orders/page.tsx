@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Eye,
   Calendar,
@@ -14,6 +13,12 @@ import {
 import { formatCurrency } from "@/utils/formatters";
 import { useOrders } from "@/hooks/useAdminDashboard";
 import { RecentOrder } from "@/hooks/useAdminDashboard";
+import { useUserById } from "@/hooks/useAdminUsers";
+import paymentService from "@/services/paymentService";
+import { fetchProductDetail } from "@/lib/api/products";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Product, ProductImage } from "@/types/product";
 
 const ORDERS_PER_PAGE = 5;
 
@@ -357,179 +362,268 @@ export default function OrdersManagementPage() {
       )}
 
       {/* Detail Modal */}
-      {/* Detail Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-4xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                  <h4 className="text-lg font-semibold">
-                    Chi tiết đơn hàng - #{selectedOrder.orderId.slice(-8)}
-                  </h4>
-                  {getStatusBadge(selectedOrder.status)}
-                </div>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                  aria-label="Close modal"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function OrderDetailModal({
+  order,
+  onClose,
+}: {
+  order: RecentOrder;
+  onClose: () => void;
+}) {
+  const { user, isLoading: userLoading } = useUserById(order.userId);
+  const [products, setProducts] = useState<
+    {
+      productId: string;
+      quantity: number;
+      totalPrice: number;
+      product: Product | null;
+      images: ProductImage[];
+    }[]
+  >([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingProducts(true);
+    paymentService
+      .getOrderDetails(order.orderId)
+      .then(
+        async (
+          details: { productId: string; quantity: number; totalPrice: number }[]
+        ) => {
+          if (!isMounted) return;
+          // Fetch all product details in parallel
+          const productPromises = details.map(async (item) => {
+            try {
+              const productData = await fetchProductDetail(item.productId);
+              return {
+                ...item,
+                product: productData.product,
+                images: productData.images || [],
+              };
+            } catch {
+              return { ...item, product: null, images: [] };
+            }
+          });
+          const prods = await Promise.all(productPromises);
+          if (isMounted) setProducts(prods);
+        }
+      )
+      .finally(() => {
+        if (isMounted) setLoadingProducts(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [order.orderId]);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-4xl w-full max-h-[80vh] overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <h4 className="text-lg font-semibold">
+                Chi tiết đơn hàng - #{order.orderId.slice(-8)}
+              </h4>
             </div>
-
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Order Information */}
-                <div className="space-y-4">
-                  <div>
-                    <h5 className="font-semibold text-gray-900 mb-3">
-                      Thông tin đơn hàng
-                    </h5>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Mã đơn hàng:</span>
-                        <span className="font-medium">
-                          {selectedOrder.orderId}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">User ID:</span>
-                        <span className="font-medium">
-                          {selectedOrder.userId}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Cart ID:</span>
-                        <span className="font-medium">
-                          {selectedOrder.cartId}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tổng đơn hàng:</span>
-                        <span className="font-medium">
-                          {formatCurrency(selectedOrder.total)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tiền cọc:</span>
-                        <span className="font-medium">
-                          {formatCurrency(selectedOrder.depositAmount)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Ngày tạo:</span>
-                        <span className="font-medium">
-                          {formatDate(selectedOrder.createdAt)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">
-                          Ngày thanh toán cọc:
-                        </span>
-                        <span className="font-medium">
-                          {selectedOrder.depositPaidAt
-                            ? formatDate(selectedOrder.depositPaidAt)
-                            : "N/A"}
-                        </span>
-                      </div>
-                      {selectedOrder.finalPaidAt && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">
-                            Ngày thanh toán cuối:
-                          </span>
-                          <span className="font-medium">
-                            {formatDate(selectedOrder.finalPaidAt)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+              aria-label="Close modal"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Order Information */}
+            <div className="space-y-4">
+              <div>
+                <h5 className="font-semibold text-gray-900 mb-3">
+                  Thông tin đơn hàng
+                </h5>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Mã đơn hàng:</span>
+                    <span className="font-medium">{order.orderId}</span>
                   </div>
-                </div>
-
-                {/* Return Request Information */}
-                {selectedOrder.returnRequest && (
-                  <div>
-                    <h5 className="font-semibold text-gray-900 mb-3">
-                      Thông tin yêu cầu trả hàng
-                    </h5>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Ngân hàng:</span>
-                        <span className="font-medium">
-                          {selectedOrder.returnRequest.bankName}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Số tài khoản:</span>
-                        <span className="font-medium">
-                          {selectedOrder.returnRequest.bankAccountNumber}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Chủ tài khoản:</span>
-                        <span className="font-medium">
-                          {selectedOrder.returnRequest.bankAccountHolder}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Ngày yêu cầu:</span>
-                        <span className="font-medium">
-                          {formatDate(selectedOrder.returnRequest.submittedAt)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Trạng thái:</span>
-                        <span className="font-medium">
-                          {selectedOrder.returnRequest.verified
-                            ? "Đã phê duyệt"
-                            : "Chờ xử lý"}
-                        </span>
-                      </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tên khách hàng:</span>
+                    <span className="font-medium">
+                      {userLoading
+                        ? "Đang tải..."
+                        : user?.fullname || order.userId}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cart ID:</span>
+                    <span className="font-medium">{order.cartId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tổng đơn hàng:</span>
+                    <span className="font-medium">
+                      {formatCurrency(order.total)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tiền cọc:</span>
+                    <span className="font-medium">
+                      {formatCurrency(order.depositAmount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ngày tạo:</span>
+                    <span className="font-medium">
+                      {new Date(order.createdAt).toLocaleString("vi-VN")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ngày thanh toán cọc:</span>
+                    <span className="font-medium">
+                      {order.depositPaidAt
+                        ? new Date(order.depositPaidAt).toLocaleString("vi-VN")
+                        : "N/A"}
+                    </span>
+                  </div>
+                  {order.finalPaidAt && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Ngày thanh toán cuối:
+                      </span>
+                      <span className="font-medium">
+                        {new Date(order.finalPaidAt).toLocaleString("vi-VN")}
+                      </span>
                     </div>
-
-                    {/* Return Photos */}
-                    {selectedOrder.returnRequest.photos &&
-                      selectedOrder.returnRequest.photos.length > 0 && (
-                        <div className="mt-4">
-                          <h6 className="font-medium text-gray-900 mb-2">
-                            Ảnh sản phẩm trả
-                          </h6>
-                          <div className="grid grid-cols-2 gap-3">
-                            {selectedOrder.returnRequest.photos.map(
-                              (photo, index) => (
-                                <div key={index} className="relative">
-                                  <img
-                                    src={photo}
-                                    alt={`Return photo ${index + 1}`}
-                                    className="w-full h-32 object-cover rounded-lg border"
-                                  />
-                                </div>
-                              )
-                            )}
+                  )}
+                </div>
+              </div>
+              {/* Sản phẩm đã thuê */}
+              <div>
+                <h5 className="font-semibold text-gray-900 mb-3">
+                  Sản phẩm đã thuê
+                </h5>
+                {loadingProducts ? (
+                  <div>Đang tải sản phẩm...</div>
+                ) : (
+                  <div className="space-y-3">
+                    {products.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 border rounded p-2"
+                      >
+                        <Image
+                          src={item.images[0]?.imageUrl || "/images/logo.png"}
+                          alt={item.product?.name || "product"}
+                          width={64}
+                          height={64}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div>
+                          <div className="font-medium">
+                            {item.product?.name || "(Không rõ tên)"}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Số lượng: {item.quantity}
                           </div>
                         </div>
-                      )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
+            {/* Return Request Information (giữ nguyên) */}
+            {order.returnRequest && (
+              <div>
+                <h5 className="font-semibold text-gray-900 mb-3">
+                  Thông tin yêu cầu trả hàng
+                </h5>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ngân hàng:</span>
+                    <span className="font-medium">
+                      {order.returnRequest.bankName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Số tài khoản:</span>
+                    <span className="font-medium">
+                      {order.returnRequest.bankAccountNumber}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Chủ tài khoản:</span>
+                    <span className="font-medium">
+                      {order.returnRequest.bankAccountHolder}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ngày yêu cầu:</span>
+                    <span className="font-medium">
+                      {new Date(order.returnRequest.submittedAt).toLocaleString(
+                        "vi-VN"
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Trạng thái:</span>
+                    <span className="font-medium">
+                      {order.returnRequest.verified
+                        ? "Đã phê duyệt"
+                        : "Chờ xử lý"}
+                    </span>
+                  </div>
+                </div>
+                {/* Return Photos */}
+                {order.returnRequest.photos &&
+                  order.returnRequest.photos.length > 0 && (
+                    <div className="mt-4">
+                      <h6 className="font-medium text-gray-900 mb-2">
+                        Ảnh sản phẩm trả
+                      </h6>
+                      <div className="grid grid-cols-2 gap-3">
+                        {order.returnRequest.photos.map((photo, index) => (
+                          <div key={index} className="relative">
+                            <Image
+                              src={photo}
+                              alt={`Return photo ${index + 1}`}
+                              width={256}
+                              height={128}
+                              className="w-full h-32 object-cover rounded-lg border"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
