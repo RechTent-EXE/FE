@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from "react";
 import * as faceapi from "face-api.js";
 import { UserProfile } from "../../types/user";
-import { AlertCircle, CheckCircle, RefreshCw, FileSearch } from "lucide-react";
+import { AlertCircle, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "react-toastify";
-import {
-  ocrService,
-  DocumentValidationResult,
-} from "../../services/ocrService";
 
 interface ExtractFaceFromImageProps {
   profile: UserProfile;
@@ -22,11 +18,9 @@ export const ExtractFaceFromImage = ({
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<
-    "idle" | "loading" | "validating" | "extracting" | "success" | "failed"
+    "idle" | "loading" | "extracting" | "success" | "failed"
   >("idle");
   const [extractionError, setExtractionError] = useState<string | null>(null);
-  const [validationResult, setValidationResult] =
-    useState<DocumentValidationResult | null>(null);
 
   // Load face-api models
   useEffect(() => {
@@ -52,10 +46,10 @@ export const ExtractFaceFromImage = ({
     loadModels();
   }, [onError]);
 
-  // Cleanup OCR worker khi component unmount
+  // Cleanup (if any) when component unmounts
   useEffect(() => {
     return () => {
-      ocrService.terminateWorker();
+      // No OCR worker to terminate
     };
   }, []);
 
@@ -68,131 +62,35 @@ export const ExtractFaceFromImage = ({
     }
 
     setIsExtracting(true);
-    setExtractionStatus("validating");
+    setExtractionStatus("extracting");
     setExtractionError(null);
 
     try {
-      // Xác định loại giấy tờ và lấy ảnh tương ứng
+      // Ưu tiên lấy ảnh giấy tờ theo thứ tự: bằng lái xe, hộ chiếu, CCCD
       let idImage: string | null = null;
-      let validationResult: DocumentValidationResult;
-
-      // Bước 1: Xác minh giấy tờ bằng OCR
-      setExtractionStatus("validating");
-
-      // Kiểm tra có bằng lái xe không (ưu tiên mặt trước)
-      if (
-        profile.drivingLicenseFrontImageUrl ||
-        profile.drivingLicenseBackImageUrl
-      ) {
-        idImage =
-          profile.drivingLicenseFrontImageUrl ||
-          profile.drivingLicenseBackImageUrl;
-
-        if (!idImage) {
-          const error = "Không tìm thấy ảnh bằng lái xe";
-          setExtractionError(error);
-          setExtractionStatus("failed");
-          onError(error);
-          return;
-        }
-
-        // Convert image URL to File object for OCR
-        const response = await fetch(idImage);
-        const blob = await response.blob();
-        const imageFile = new File([blob], "driver-license.jpg", {
-          type: blob.type,
-        });
-
-        // Debug: Log extracted text
-        console.log("🔍 Starting OCR for driver license...");
-        validationResult = await ocrService.validateDriverLicense(
-          imageFile,
-          profile.fullname || ""
-        );
-        console.log("🔍 OCR Result:", validationResult);
-      }
-      // Kiểm tra có hộ chiếu không
-      else if (profile.passportFrontImageUrl) {
+      if (profile.drivingLicenseFrontImageUrl || profile.drivingLicenseBackImageUrl) {
+        idImage = profile.drivingLicenseFrontImageUrl || profile.drivingLicenseBackImageUrl;
+      } else if (profile.passportFrontImageUrl) {
         idImage = profile.passportFrontImageUrl;
-
-        // Convert image URL to File object for OCR
-        const response = await fetch(idImage);
-        const blob = await response.blob();
-        const imageFile = new File([blob], "passport.jpg", { type: blob.type });
-
-        console.log("🔍 Starting OCR for passport...");
-        validationResult = await ocrService.validatePassport(
-          imageFile,
-          profile.fullname || ""
-        );
-        console.log("🔍 OCR Result:", validationResult);
-      }
-      // Mặc định kiểm tra CCCD (ưu tiên mặt trước)
-      else {
+      } else {
         idImage = profile.identityFrontImage || profile.identityBackImage;
-
-        if (!idImage) {
-          const error = "Không tìm thấy ảnh giấy tờ tùy thân";
-          setExtractionError(error);
-          setExtractionStatus("failed");
-          onError(error);
-          return;
-        }
-
-        // Convert image URL to File object for OCR
-        const response = await fetch(idImage);
-        const blob = await response.blob();
-        const imageFile = new File([blob], "cccd.jpg", { type: blob.type });
-
-        console.log("🔍 Starting OCR for CCCD...");
-        validationResult = await ocrService.validateCCCD(
-          imageFile,
-          profile.fullname || ""
-        );
-        console.log("🔍 OCR Result:", validationResult);
       }
 
-      setValidationResult(validationResult);
-
-      if (!validationResult.isValid) {
-        toast.error(validationResult.errorMessage || "Giấy tờ không hợp lệ");
-        setExtractionError(
-          validationResult.errorMessage || "Giấy tờ không hợp lệ"
-        );
+      if (!idImage) {
+        const error = "Không tìm thấy ảnh giấy tờ tùy thân";
+        setExtractionError(error);
         setExtractionStatus("failed");
-        onError(validationResult.errorMessage || "Giấy tờ không hợp lệ");
+        onError(error);
         return;
       }
 
-      // Hiển thị thông báo thành công với thông tin chi tiết
-      const documentTypeName =
-        validationResult.documentType === "cccd"
-          ? "CCCD"
-          : validationResult.documentType === "driver_license"
-          ? "Bằng lái xe"
-          : "Hộ chiếu";
-
-      const documentTitle = validationResult.documentTitle || documentTypeName;
-
-      toast.success(
-        `✅ Xác minh ${documentTypeName} thành công!\n📄 Loại thẻ: ${documentTitle}\n👤 Họ tên: ${validationResult.extractedName}`
-      );
-
-      // Bước 2: Trích xuất khuôn mặt
-      setExtractionStatus("extracting");
-
-      // Create image element
+      // Tạo thẻ img để detect khuôn mặt
       const img = document.createElement("img");
       img.crossOrigin = "anonymous";
-
       await new Promise((resolve, reject) => {
-        img.onload = () => {
-          resolve(null);
-        };
-        img.onerror = (error) => {
-          reject(error);
-        };
-        img.src = idImage;
+        img.onload = () => resolve(null);
+        img.onerror = (error) => reject(error);
+        img.src = idImage!;
       });
 
       // Detect face and extract descriptor
@@ -251,22 +149,6 @@ export const ExtractFaceFromImage = ({
             </div>
           )}
 
-          {extractionStatus === "validating" && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 text-blue-600">
-                <FileSearch className="animate-pulse" size={20} />
-                <span>Đang xác minh giấy tờ bằng OCR...</span>
-              </div>
-              <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded-lg">
-                🔍 Tesseract.js đang phân tích văn bản trong ảnh...
-                <br />
-                📄 Kiểm tra loại giấy tờ và so sánh tên với hồ sơ
-                <br />
-                ⏱️ Quá trình này có thể mất 10-30 giây
-              </div>
-            </div>
-          )}
-
           {extractionStatus === "extracting" && (
             <div className="flex items-center gap-3 text-blue-600">
               <RefreshCw className="animate-spin" size={20} />
@@ -282,23 +164,6 @@ export const ExtractFaceFromImage = ({
                   ✅ Trích xuất khuôn mặt thành công! Có thể tiến hành xác minh.
                 </span>
               </div>
-              {validationResult && validationResult.isValid && (
-                <div className="text-sm text-gray-600 bg-green-50 p-2 rounded-lg">
-                  📄 Đã xác minh giấy tờ:{" "}
-                  {validationResult.documentType === "cccd"
-                    ? "CCCD"
-                    : validationResult.documentType === "driver_license"
-                    ? "Bằng lái xe"
-                    : "Hộ chiếu"}
-                  <br />
-                  🏷️ Tên thẻ được phát hiện:{" "}
-                  {validationResult.documentTitle || "Không phát hiện"}
-                  <br />
-                  👤 Tên trên giấy tờ: {validationResult.extractedName}
-                  <br />
-                  📊 Độ tin cậy OCR: {Math.round(validationResult.confidence)}%
-                </div>
-              )}
             </div>
           )}
 
